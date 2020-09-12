@@ -1,6 +1,6 @@
 'use strict';
     
-// const api = require('../api')
+const api = require('../api')
 
 const CONTAINER_TIPOROUPAS = ["camisa", "calca", "calça", "sandalia", "blusa", "camiseta", "chinelo", "sapato", "calçado", "tênis", "tenis",
           "camisas", "calcas", "sandalias", "blusas", "camisetas", "chinelos", "sapatos", "calcados", "calçados"];
@@ -11,14 +11,29 @@ const CONTAINER_COR = ["azul", "preto", "verde", "amarelo", "branco", "laranja",
                         "preta", "amarela", "branca", "vermelha"];
 
 
-// async function getCategorias() {
-//   api.get('catalog_system/pub/caregory/tree/1')
-//   .then(response => {
-//     console.log(response.data)
-//   })
-// }
+const getCategorias = async () => {
+  const url = 'catalog_system/pub/category/tree/1'
 
-function validate(slots) {
+  const response = await api.get(url)
+  const data = response.data
+
+  console.log(' response:', response)
+  console.log(' data:', data)
+
+  const categorias = data.map(categoria => (
+    categoria.name
+  ))
+
+  console.log(' response:', response)
+  console.log(' data:', data)
+
+  return categorias
+}
+
+
+async function validate(slots) {
+
+  console.log(' Categorias da API:', await getCategorias())
 
   const { tipoRoupa, categoria, numero, cor } = slots;
 
@@ -87,13 +102,13 @@ function validate(slots) {
   }
 }
 
-function dispatch(intentRequest, callback) {
+async function dispatch(intentRequest, callback) {
   
   const slots = intentRequest.currentIntent.slots;
 
-  const resultValidation = validate(slots);
+  const resultValidation = await validate(slots);
 
-  // se algum slot for invalido
+  // se algum slot está invalido
   if (!resultValidation.isValid) {
     slots[resultValidation.violatedSlot] = null;
     callback({
@@ -106,25 +121,25 @@ function dispatch(intentRequest, callback) {
         message: resultValidation.message
       }
     })
+    return
   }
+  
   // todos slots estão válidos
-  else {
-    callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'Delegate',
-        slots: intentRequest.currentIntent.slots
-      }
-    })
-  }
+  callback({
+    sessionAttributes: intentRequest.sessionAttributes,
+    dialogAction: {
+      type: 'Delegate',
+      slots: intentRequest.currentIntent.slots
+    }
+  })
 
   return
 }
 
-module.exports = (event, context, callback) => {
+module.exports = async (event, context, callback) => {
   try {
 
-    dispatch(event, (response) => callback(null, response));
+    await dispatch(event, (response) => callback(null, response));
 
   } catch (err) {
 
