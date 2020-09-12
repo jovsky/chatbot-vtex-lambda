@@ -6,7 +6,7 @@ const CONTAINER_CATEGORIAS = ["social", "sociais", "esportivo", "esportivos", "e
 const CONTAINER_NUMERO_PMG = ["pp", "p", "m", "g", "xg"];
 const CONTAINER_NUMERO_NUM = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
 const CONTAINER_COR = ["azul", "preto", "verde", "amarelo", "branco", "laranja", "vermelho", "marrom",
-                        "preta", "amarela", "branca", "vermelha"]
+                        "preta", "amarela", "branca", "vermelha"];
 
 function validate(slots) {
 
