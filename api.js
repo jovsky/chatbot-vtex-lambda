@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 export default axios.create({
-  baseURL: "https://hiringcoders14.vtexcommercestable.com.br/api",
+  baseURL: "https://hiringcoders14.vtexcommercestable.com.br/api/",
   method: "GET",
   headers: {
     'accept': 'application/json',
