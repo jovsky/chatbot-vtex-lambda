@@ -1,6 +1,6 @@
 'use strict';
     
-const api = require('../api')
+// const api = require('../api')
 
 const CONTAINER_TIPOROUPAS = ["camisa", "calca", "calça", "sandalia", "blusa", "camiseta", "chinelo", "sapato", "calçado", "tênis", "tenis",
           "camisas", "calcas", "sandalias", "blusas", "camisetas", "chinelos", "sapatos", "calcados", "calçados"];
@@ -11,12 +11,12 @@ const CONTAINER_COR = ["azul", "preto", "verde", "amarelo", "branco", "laranja",
                         "preta", "amarela", "branca", "vermelha"];
 
 
-async function getCategorias() {
-  api.get('catalog_system/pub/caregory/tree/1')
-  .then(response => {
-    console.log(response.data)
-  })
-}
+// async function getCategorias() {
+//   api.get('catalog_system/pub/caregory/tree/1')
+//   .then(response => {
+//     console.log(response.data)
+//   })
+// }
 
 function validate(slots) {
 
