@@ -1,0 +1,13 @@
+service: first-lambda
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: us-east-1
+
+
+functions:
+  sugerirProduto:
+    handler: handler.sugerirProduto
