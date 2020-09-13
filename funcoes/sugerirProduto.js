@@ -1,6 +1,17 @@
 'use strict';
     
 const api = require('../api')
+const client = require('../client')
+
+client.session.getSession().done(function(data){
+
+  // Obtenemos el vtexSession
+  
+  let vtexSession = data.namespaces.cookie.VtexIdclientAutCookie.value;
+  
+  console.log('vtexSession', vtexSession);
+  
+  });
 
 const CONTAINER_TIPOROUPAS = ["camisa", "calca", "calça", "sandalia", "blusa", "camiseta", "chinelo", "sapato", "calçado", "tênis", "tenis",
           "camisas", "calcas", "sandalias", "blusas", "camisetas", "chinelos", "sapatos", "calcados", "calçados"];
@@ -17,11 +28,11 @@ const getCategorias = async () => {
   const response = await api.get(url)
   const data = response.data
 
-  const categorias = data.map(categoria => (
-    categoria.name.toLowerCase()
+  const result = data.map(result => (
+    result.name.toLowerCase()
   ))
 
-  return categorias
+  return result
 }
 
 
@@ -31,28 +42,61 @@ async function validate(slots) {
   const { tipoRoupa, categoria, numero, cor } = slots;
   
   
-  const result = await getCategorias()
-  console.log(' Categorias da API:', result)
+  const categorias = await getCategorias()
+  console.log(' Categorias da API:', categorias)
 
-  if (tipoRoupa !== null && !result.includes(tipoRoupa.toLowerCase())) {
-    console.log(' >>> ', result, tipoRoupa.toLowerCase(), result.includes(tipoRoupa.toLowerCase()))
+  if (tipoRoupa !== null && !categorias.includes(tipoRoupa.toLowerCase())) {
+    //console.log(' >>> ', categorias, tipoRoupa.toLowerCase(), categorias.includes(tipoRoupa.toLowerCase()))
     return {
       isValid: false,
       violatedSlot: "tipoRoupa",
       message: {
         contentType: "PlainText",
-        content: "Desculpe, não possuimos este tipo de roupa na loja, temos por exemplo " + result[4]+ ". Qual deseja?"
+        content: "Desculpe, não possuimos este tipo de roupa na loja, temos por exemplo " + categorias[4]+ ". Qual deseja?"
       }
     }
   }
 
-  if (categoria !== null && !CONTAINER_CATEGORIAS.includes(categoria.toLowerCase())) {
+  if (categoria !== null && !categorias.includes(categoria.toLowerCase())) {
     return {
       isValid: false,
       violatedSlot: "categoria",
-      message: {
+      /* message: {
         contentType: "PlainText",
-        content: "Desculpe, trabalhamos apenas com as categorias social, esportiva e casual. Qual deseja?"
+        content: `Desculpe, trabalhamos apenas com as categorias: ${categorias}. Qual deseja?`,
+      }, */
+      responseCard: {
+        version: 1,
+        contentType: "application/vnd.amazonaws.card.generic",
+        genericAttachments: [
+          {
+            title: `Desculpe, trabalhamos apenas com as seguintes categorias. Qual deseja?`,
+            subTitle: "Escolha uma das opcoes", 
+            imageUrl: "https://hiringcoders14.vtexassets.com/assets/vtex/assets-builder/vtex.minimumtheme/0.1.0/jaquetaAzul___a3a35d6a629d8738bd26dc2628486c69.jpg",
+            buttons: [
+              {
+                text: categorias[0],
+                value: "blusas"
+              },
+              {
+                text: categorias[1],
+                value: "chapeus"
+              },
+              {
+                text: categorias[2],
+                value: "camisas"
+              },
+              {
+                text: categorias[3],
+                value: "camisas"
+              },
+              {
+                text: categorias[4],
+                value: "camisas"
+              }
+            ]
+          }
+        ]
       }
     }
   }
@@ -116,7 +160,7 @@ async function dispatch(intentRequest, callback) {
         intentName: intentRequest.currentIntent.name,
         slots,
         slotToElicit: resultValidation.violatedSlot,
-        message: resultValidation.message
+        responseCard: resultValidation.responseCard
       }
     })
     return
