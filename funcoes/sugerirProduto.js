@@ -50,19 +50,49 @@ const getProdutos = async (idCategoria, categoria) => {
   return result
 }
 
-async function validate(slots, categorias) {
+const getSKUs = async (idProduto, produto) => {
 
-  console.log(' SLOTS NO VALIDATE:', slots);
+  const url = `catalog_system/pub/products/search?fq=productId:${idProduto}`
+
+  const response = await api.get(url)
+  const data = response.data
+
+  if(data.length === 0 || data === null) {
+    throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
+  }
+
+  const result = data.map( produto => {
+    return {
+      nome: produto.productName,
+      id: produto.productId
+    }
+  })
+
+  return result
+
+}
+
+async function validate(slots, categoria, produtos=undefined) {
+
   const categoria = slots.categoria;
   
   const nomesCategorias = categorias.map( categoria => categoria.nome)
-
   if (!nomesCategorias.includes(categoria.toLowerCase())) {
     return {
       isValid: false,
       violatedSlot: "categoria"
     }
   }
+
+  const nomesProdutos = produtos.map( produto => produto.nome)
+  if (!nomesProdutos.includes(produto.toLowerCase())) {
+    return {
+      isValid: false,
+      violatedSlot: "produto"
+    }
+  }
+
+
   else {
     return {
       isValid: true
@@ -71,7 +101,7 @@ async function validate(slots, categorias) {
 
 }
 
-async function cardOpcao(categoria, categorias) {
+async function cardProduto(categoria, categorias) {
 
   const result = categorias.filter( (cat) => cat.nome === categoria);
   const idCategoria = result[0].id;
@@ -80,7 +110,7 @@ async function cardOpcao(categoria, categorias) {
   const produtosAPI = await getProdutos(idCategoria, categoria);
 
 
-  const botoesOpcoes = produtosAPI.map( (produto) => {
+  const botoesProdutos = produtosAPI.map( (produto) => {
     return {
       text: produto.nome,
       value: produto.nome
@@ -92,7 +122,7 @@ async function cardOpcao(categoria, categorias) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        buttons: botoesOpcoes
+        buttons: botoesProdutos
       }
     ]
   }
@@ -125,17 +155,16 @@ async function cardCategorias() {
 async function dispatch(intentRequest, callback) {
 
   let categoriaValida = false;
+  let produtoValido = false;
+  
   
   const slots = intentRequest.currentIntent.slots;
   var categorias;
 
   console.log(' SLOTS: ', slots)
   
-
   // a categoria ainda nao foi informada
-  if (slots.categoria === null && slots.opcao === null) {
-
-    console.log(' ENTROU NO PRIMEIRO IF', slots.categoria, slots.opcao)
+  if (slots.categoria === null && slots.produto === null) {
 
     callback({
       sessionAttributes: intentRequest.sessionAttributes,
@@ -156,9 +185,9 @@ async function dispatch(intentRequest, callback) {
   }
 
   // verificar se a categoria ainda precisa ser validada
-  else if (slots.categoria !== null && slots.opcao === null) {
+  else if (slots.categoria !== null && slots.produto === null) {
     
-    // console.log(' ENTROU NO SEGUNDO IF', slots.categoria, slots.opcao)
+    // console.log(' ENTROU NO SEGUNDO IF', slots.categoria, slots.produto)
 
     categorias = await getCategorias(); 
 
@@ -186,7 +215,6 @@ async function dispatch(intentRequest, callback) {
     // se a cateogira está certa
     else {
       categoriaValida = true;
-
     }
 
   }
@@ -197,10 +225,9 @@ async function dispatch(intentRequest, callback) {
     var card;
 
     try{
+      card = await cardProduto(slots.categoria, categorias);
+    }
 
-      card = await cardOpcao(slots.categoria, categorias);
-
-    } 
     catch (msgErro) {
       slots.categoria = null;
       callback({
@@ -227,7 +254,7 @@ async function dispatch(intentRequest, callback) {
         type: 'ElicitSlot',
         intentName: intentRequest.currentIntent.name,
         slots,
-        slotToElicit: 'opcao',
+        slotToElicit: 'produto',
         responseCard: card
       }
     })
