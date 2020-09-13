@@ -92,9 +92,6 @@ async function cardOpcao(categoria, categorias) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: `Dê uma olhada nos nossos produtos da categoria ${categoria}.`,
-        subTitle: "Escolha uma das opcões", 
-        imageUrl: "https://hiringcoders14.vtexassets.com/assets/vtex/assets-builder/vtex.minimumtheme/0.1.0/jaquetaAzul___a3a35d6a629d8738bd26dc2628486c69.jpg",
         buttons: botoesOpcoes
       }
     ]
@@ -118,8 +115,6 @@ async function cardCategorias() {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: `Temos as seguintes categorias de roupas.`,
-        subTitle: "escolha uma das opções", 
         buttons: botoesCategorias
       }
     ]
