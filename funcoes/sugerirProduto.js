@@ -17,216 +17,130 @@ const getCategorias = async () => {
   const response = await api.get(url)
   const data = response.data
 
-  const result = data.map(result => (
-    result.name.toLowerCase()
-  ))
+  const result = data.map(result => {
+    return {
+      nome: result.name.toLowerCase(),
+      id: result.id
+    }
+  })
 
   return result
 }
 
-async function validate(slots) {
+const getProdutos = async (idCategoria, categoria) => {
 
-  const categoria = slots.categoria;
-  
-  const categorias = await getCategorias();
-  // console.log(' Categorias da API:', categorias)
+  // console.log(' ID do blusas:', idCategoria)
 
-  if (!categorias.includes(categoria.toLowerCase())) {
-    return {
-      isValid: false,
-      violatedSlot: "categoria",
-      // message: {
-      //   contentType: "PlainText",
-      //   content: "Desculpe, não possuimos esta categoria na loja. Escolha uma das categorias abaixo:"
-      // },
-      responseCard: await cardCategorias()
-    }
-  } 
-
-  return {
-    isValid: true
-  }
-
-  // if (categoria !== null && !categorias.includes(categoria.toLowerCase())) {
-  //   return {
-  //     isValid: false,
-  //     violatedSlot: "categoria",
-  //     /* message: {
-  //       contentType: "PlainText",
-  //       content: `Desculpe, trabalhamos apenas com as categorias: ${categorias}. Qual deseja?`,
-  //     }, */
-  //     responseCard: {
-  //       version: 1,
-  //       contentType: "application/vnd.amazonaws.card.generic",
-  //       genericAttachments: [
-  //         {
-  //           title: `Desculpe, trabalhamos apenas com as seguintes categorias. Qual deseja?`,
-  //           subTitle: "Escolha uma das opcoes", 
-  //           imageUrl: "https://hiringcoders14.vtexassets.com/assets/vtex/assets-builder/vtex.minimumtheme/0.1.0/jaquetaAzul___a3a35d6a629d8738bd26dc2628486c69.jpg",
-  //           buttons: [
-  //             {
-  //               text: categorias[0],
-  //               value: "blusas"
-  //             },
-  //             {
-  //               text: categorias[1],
-  //               value: "chapeus"
-  //             },
-  //             {
-  //               text: categorias[2],
-  //               value: "camisas"
-  //             },
-  //             {
-  //               text: categorias[3],
-  //               value: "camisas"
-  //             },
-  //             {
-  //               text: categorias[4],
-  //               value: "camisas"
-  //             }
-  //           ]
-  //         }
-  //       ]
-  //     }
-  //   }
-  // } 
-  /* else if(categoria !== null && categorias.includes(categoria.toLowerCase())){
-    return {
-      isValid: true,
-      currentSlot: "categoria",
-      botVersion: "$LATEST",
-      dialogState: "ElicitSlot",
-      violatedSlot: "opcao",
-      message: {
-        contentType: "PlainText",
-        content: "Temos os siguintes produtos para esta categoria, qual precisa?"
-      }
-    }
-  }  */
-
-  // if (numero !== null) {
-  //   // console.log(" TERCEIRO LOG:", numero, numero.toLowerCase(), CONTAINER_NUMERO_PMG.includes(numero.toLowerCase()), CONTAINER_NUMERO_PMG.includes(numero.toLowerCase()) )
-  //   if (categorias.includes(categoria.toLowerCase())) {
-  //     if (!CONTAINER_NUMERO_PMG.includes(numero.toLowerCase())) {
-  //       return {
-  //         isValid: false,
-  //         violatedSlot: "numero",
-  //         message: {
-  //           contentType: "PlainText",
-  //           content: "Não possuímos este tamanho para este item. Temos disponíveis PP, P, M, G, XG. Qual deseja?"
-  //         }
-  //       }
-  //     }
-  //   } else {
-  //     if (!CONTAINER_NUMERO_NUM.includes(numero.toLowerCase())) {
-  //       return {
-  //         isValid: false,
-  //         violatedSlot: "numero",
-  //         message: {
-  //           contentType: "PlainText",
-  //           content: "Não possuímos este tamanho para este item. Escolha um tamanho entre 35 e 46."
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  // if (cor !== null && !CONTAINER_COR.includes(cor.toLowerCase())) {
-  //   return {
-  //     isValid: false,
-  //     violatedSlot: "cor",
-  //     message: {
-  //       contentType: "PlainText",
-  //       content: "Não possuímos este item nesta cor, escolha outra."
-  //     }
-  //   }
-  // }
-
-  // return {
-  //   isValid: true
-  // }
-}
-
-async function cardOpcao(categoria) {
-  const url = 'catalog_system/pub/category/tree/1'
+  const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
 
   const response = await api.get(url)
   const data = response.data
 
-  return {
-    slotToElicit: "opcao",
-    // message: {
-    // contentType: "PlainText",
-    // content: "Temos os siguintes produtos para esta categoria, qual precisa?"
-    // },
-    responseCard: {
+  if(data.length === 0 || data === null) {
+    throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
+  }
 
+  const result = data.map( produto => {
+    return {
+      nome: produto.productName,
+      id: produto.productId
     }
+  })
+
+  return result
+}
+
+async function validate(slots, categorias) {
+
+  console.log(' SLOTS NO VALIDATE:', slots);
+  const categoria = slots.categoria;
+  
+  const nomesCategorias = categorias.map( categoria => categoria.nome)
+
+  if (!nomesCategorias.includes(categoria.toLowerCase())) {
+    return {
+      isValid: false,
+      violatedSlot: "categoria"
+    }
+  }
+  else {
+    return {
+      isValid: true
+    }
+  }
+
+}
+
+async function cardOpcao(categoria, categorias) {
+
+  const result = categorias.filter( (cat) => cat.nome === categoria);
+  const idCategoria = result[0].id;
+
+
+  const produtosAPI = await getProdutos(idCategoria, categoria);
+
+
+  const botoesOpcoes = produtosAPI.map( (produto) => {
+    return {
+      text: produto.nome,
+      value: produto.nome
+    }
+  })
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: `Dê uma olhada nos nossos produtos da categoria ${categoria}.`,
+        subTitle: "Escolha uma das opcões", 
+        imageUrl: "https://hiringcoders14.vtexassets.com/assets/vtex/assets-builder/vtex.minimumtheme/0.1.0/jaquetaAzul___a3a35d6a629d8738bd26dc2628486c69.jpg",
+        buttons: botoesOpcoes
+      }
+    ]
   }
 }
 
 async function cardCategorias() {
 
-  // const { categoria, numero, cor } = slots;
-  
-  const categorias = await getCategorias()
+  const categorias = await getCategorias()  // ['blusa', 'calca', 'sapatos']
   console.log(' Categorias da API:', categorias)
 
-  getCategorias
+  const botoesCategorias = categorias.map( (categoria) => {
+    return {
+      text: categoria.nome,
+      value: categoria.nome
+    }
+  })
 
   return {
-    isValid: false,
-    violatedSlot: "categoria",
-    /* message: {
-      contentType: "PlainText",
-      content: `Desculpe, trabalhamos apenas com as categorias: ${categorias}. Qual deseja?`,
-    }, */
-    responseCard: {
-      version: 1,
-      contentType: "application/vnd.amazonaws.card.generic",
-      genericAttachments: [
-        {
-          title: `Desculpe, trabalhamos apenas com as seguintes categorias. Qual deseja?`,
-          subTitle: "Escolha uma das opcoes", 
-          imageUrl: "https://hiringcoders14.vtexassets.com/assets/vtex/assets-builder/vtex.minimumtheme/0.1.0/jaquetaAzul___a3a35d6a629d8738bd26dc2628486c69.jpg",
-          buttons: [
-            {
-              text: categorias[0],
-              value: "blusas"
-            },
-            {
-              text: categorias[1],
-              value: "chapeus"
-            },
-            {
-              text: categorias[2],
-              value: "camisas"
-            },
-            {
-              text: categorias[3],
-              value: "camisas"
-            },
-            {
-              text: categorias[4],
-              value: "camisas"
-            }
-          ]
-        }
-      ]
-    }
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: `Temos as seguintes categorias de roupas.`,
+        subTitle: "escolha uma das opções", 
+        buttons: botoesCategorias
+      }
+    ]
   }
 }
+
 
 async function dispatch(intentRequest, callback) {
 
   let categoriaValida = false;
   
   const slots = intentRequest.currentIntent.slots;
+  var categorias;
+
+  console.log(' SLOTS: ', slots)
+  
 
   // a categoria ainda nao foi informada
-  if (slots.categorias === null && slots.opcao === null) {
+  if (slots.categoria === null && slots.opcao === null) {
 
-    const card = await cardCategorias()
+    console.log(' ENTROU NO PRIMEIRO IF', slots.categoria, slots.opcao)
 
     callback({
       sessionAttributes: intentRequest.sessionAttributes,
@@ -234,8 +148,12 @@ async function dispatch(intentRequest, callback) {
         type: 'ElicitSlot',
         intentName: intentRequest.currentIntent.name,
         slots,
-        slotToElicit: resultValidation.violatedSlot,
-        responseCard: card
+        slotToElicit: 'categoria',
+        message: {
+          contentType: 'PlainText',
+          content: 'Para lhe ajudar, precisamos saber que tipo de roupa está procurando. Temos as seguintes categorias:'
+        },
+        responseCard: await cardCategorias()
       }
     })
     return
@@ -243,13 +161,17 @@ async function dispatch(intentRequest, callback) {
   }
 
   // verificar se a categoria ainda precisa ser validada
-  else if (slots.categorias !== null && slots.opcao === null) {
+  else if (slots.categoria !== null && slots.opcao === null) {
     
-    const resultValidation = await validate(slots);
+    // console.log(' ENTROU NO SEGUNDO IF', slots.categoria, slots.opcao)
+
+    categorias = await getCategorias(); 
+
+    const resultValidation = await validate(slots, categorias);
 
     // se a categoria for ivnalida
     if (!resultValidation.isValid) {
-      slots['categoria'] = null;
+      slots.categoria = null;
       callback({
         sessionAttributes: intentRequest.sessionAttributes,
         dialogAction: {
@@ -257,7 +179,11 @@ async function dispatch(intentRequest, callback) {
           intentName: intentRequest.currentIntent.name,
           slots,
           slotToElicit: 'categoria',
-          responseCard: resultValidation.responseCard
+          message: {
+            contentType: 'PlainText',
+            content: 'Desculpe, não temos esta categoria. Temos as seguintes:'
+          },
+          responseCard: await cardCategorias()
         }
       })
       return
@@ -265,6 +191,7 @@ async function dispatch(intentRequest, callback) {
     // se a cateogira está certa
     else {
       categoriaValida = true;
+
     }
 
   }
@@ -272,7 +199,32 @@ async function dispatch(intentRequest, callback) {
   // categoria já está ok, agora vamos mandar o response Card com as opcoes da API
   if (categoriaValida) {
 
-    const card = await cardOpcao(slots.categoria);
+    var card;
+
+    try{
+
+      card = await cardOpcao(slots.categoria, categorias);
+
+    } 
+    catch (msgErro) {
+      slots.categoria = null;
+      callback({
+        sessionAttributes: intentRequest.sessionAttributes,
+        dialogAction: {
+          type: 'ElicitSlot',
+          intentName: intentRequest.currentIntent.name,
+          slots,
+          slotToElicit: 'categoria',
+          message: {
+            contentType: 'PlainText',
+            content: msgErro.message
+          },
+          responseCard: await cardCategorias()
+        }
+      })
+      return
+    }
+    
 
     callback({
       sessionAttributes: intentRequest.sessionAttributes,
