@@ -17,15 +17,9 @@ const getCategorias = async () => {
   const response = await api.get(url)
   const data = response.data
 
-  console.log(' response:', response)
-  console.log(' data:', data)
-
   const categorias = data.map(categoria => (
-    categoria.name
+    categoria.name.toLowerCase()
   ))
-
-  console.log(' response:', response)
-  console.log(' data:', data)
 
   return categorias
 }
@@ -33,17 +27,21 @@ const getCategorias = async () => {
 
 async function validate(slots) {
 
-  console.log(' Categorias da API:', await getCategorias())
-
+  
   const { tipoRoupa, categoria, numero, cor } = slots;
+  
+  
+  const result = await getCategorias()
+  console.log(' Categorias da API:', result)
 
-  if (tipoRoupa !== null && !CONTAINER_TIPOROUPAS.includes(tipoRoupa.toLowerCase())) {
+  if (tipoRoupa !== null && !result.includes(tipoRoupa.toLowerCase())) {
+    console.log(' >>> ', result, tipoRoupa.toLowerCase(), result.includes(tipoRoupa.toLowerCase()))
     return {
       isValid: false,
       violatedSlot: "tipoRoupa",
       message: {
         contentType: "PlainText",
-        content: "Desculpe, não possuimos este tipo de roupa na loja, possuimos camisas, calças e calçados. Qual deseja?"
+        content: "Desculpe, não possuimos este tipo de roupa na loja, temos por exemplo " + result[4]+ ". Qual deseja?"
       }
     }
   }
