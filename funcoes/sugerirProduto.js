@@ -1,17 +1,6 @@
 'use strict';
     
 const api = require('../api')
-const client = require('../client')
-
-client.session.getSession().done(function(data){
-
-  // Obtenemos el vtexSession
-  
-  let vtexSession = data.namespaces.cookie.VtexIdclientAutCookie.value;
-  
-  console.log('vtexSession', vtexSession);
-  
-  });
 
 const CONTAINER_TIPOROUPAS = ["camisa", "calca", "calça", "sandalia", "blusa", "camiseta", "chinelo", "sapato", "calçado", "tênis", "tenis",
           "camisas", "calcas", "sandalias", "blusas", "camisetas", "chinelos", "sapatos", "calcados", "calçados"];
@@ -39,23 +28,23 @@ const getCategorias = async () => {
 async function validate(slots) {
 
   
-  const { tipoRoupa, categoria, numero, cor } = slots;
+  const { categoria, numero, cor } = slots;
   
   
   const categorias = await getCategorias()
   console.log(' Categorias da API:', categorias)
 
-  if (tipoRoupa !== null && !categorias.includes(tipoRoupa.toLowerCase())) {
+  /* if (categoria !== null && !categorias.includes(categoria.toLowerCase())) {
     //console.log(' >>> ', categorias, tipoRoupa.toLowerCase(), categorias.includes(tipoRoupa.toLowerCase()))
     return {
       isValid: false,
       violatedSlot: "tipoRoupa",
       message: {
         contentType: "PlainText",
-        content: "Desculpe, não possuimos este tipo de roupa na loja, temos por exemplo " + categorias[4]+ ". Qual deseja?"
+        content: "Desculpe, não possuimos esta categoria na loja, temos por exemplo " + categorias[4]+ ". Qual deseja?"
       }
     }
-  }
+  }  */
 
   if (categoria !== null && !categorias.includes(categoria.toLowerCase())) {
     return {
@@ -99,11 +88,23 @@ async function validate(slots) {
         ]
       }
     }
-  }
+  } /* else if(categoria !== null && categorias.includes(categoria.toLowerCase())){
+    return {
+      isValid: true,
+      currentSlot: "categoria",
+      botVersion: "$LATEST",
+      dialogState: "ElicitSlot",
+      violatedSlot: "opcao",
+      message: {
+        contentType: "PlainText",
+        content: "Temos os siguintes produtos para esta categoria, qual precisa?"
+      }
+    }
+  }  */
 
   if (numero !== null) {
     // console.log(" TERCEIRO LOG:", numero, numero.toLowerCase(), CONTAINER_NUMERO_PMG.includes(numero.toLowerCase()), CONTAINER_NUMERO_PMG.includes(numero.toLowerCase()) )
-    if (["camisas", "camisa", "camisetas", "blusa", "camiseta", "camisetas", "blusas"].includes(tipoRoupa.toLowerCase())) {
+    if (categorias.includes(categoria.toLowerCase())) {
       if (!CONTAINER_NUMERO_PMG.includes(numero.toLowerCase())) {
         return {
           isValid: false,
@@ -141,6 +142,21 @@ async function validate(slots) {
 
   return {
     isValid: true
+  }
+}
+
+function cardOpcao(categoria) {
+  const url = 'catalog_system/pub/category/tree/1'
+
+  const response = await api.get(url)
+  const data = response.data
+
+  return {
+    slotToElicit: "opcao",
+    message: {
+    contentType: "PlainText",
+    content: "Temos os siguintes produtos para esta categoria, qual precisa?"
+    }
   }
 }
 
