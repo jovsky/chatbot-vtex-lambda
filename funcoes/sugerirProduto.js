@@ -145,7 +145,7 @@ async function validate(slots) {
   }
 }
 
-function cardOpcao(categoria) {
+async function cardOpcao(categoria) {
   const url = 'catalog_system/pub/category/tree/1'
 
   const response = await api.get(url)
@@ -153,9 +153,12 @@ function cardOpcao(categoria) {
 
   return {
     slotToElicit: "opcao",
-    message: {
-    contentType: "PlainText",
-    content: "Temos os siguintes produtos para esta categoria, qual precisa?"
+    // message: {
+    // contentType: "PlainText",
+    // content: "Temos os siguintes produtos para esta categoria, qual precisa?"
+    // },
+    responseCard: {
+
     }
   }
 }
@@ -164,7 +167,19 @@ async function dispatch(intentRequest, callback) {
   
   const slots = intentRequest.currentIntent.slots;
 
-  const resultValidation = await validate(slots);
+  // verificar se a categoria ainda precisa ser validada
+  if (true) {
+    
+    const resultValidation = await validate(slots);
+
+  }
+  // categoria já está ok, agora vamos mandar o response Card com as opcoes da API
+  else if (true) {
+
+    const cardOpcao = await cardOpcao();
+
+  }
+
 
   // se algum slot está invalido
   if (!resultValidation.isValid) {
