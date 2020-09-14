@@ -55,8 +55,8 @@ module.exports.SKUs = function(skusAPI) {
       imageUrl: sku.imagem,
       attachmentLinkUrl: sku.linkCarrinho,
       buttons: [{
-        text: 'Adicionar ao carrinho',
-        value: sku.nome
+        text: 'Gostei',
+        value: sku.linkCarrinho
       }]
     }
   })

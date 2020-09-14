@@ -309,8 +309,13 @@ async function dispatch(intentRequest, callback) {
   callback({
     sessionAttributes: intentRequest.sessionAttributes,
     dialogAction: {
-      type: 'Delegate',
-      slots: intentRequest.currentIntent.slots
+      type: 'ConfirmIntent',
+      slots,
+      intentName: intentRequest.currentIntent.name,
+      message: {
+        contentType: "CustomPayload",
+        content: `\{"message": "Clica aqui para adicionar ao carrinho",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.sku}",\n "name":"Adicionar ao carrinho"\}]\}\}`
+      }
     }
   })
 
