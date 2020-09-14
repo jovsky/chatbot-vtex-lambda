@@ -189,12 +189,12 @@ function cardSKUs() {
   const slideCards = skusAPI.map((sku) => {
     return {
       title: sku.nome.replaceChar("_"," ").toUpperCase(),
-      subTitle: sku.price,
+      subTitle: `R$ ${sku.preco}`,
       imageUrl: sku.imagem,
       attachmentLinkUrl: sku.linkCarrinho,
       buttons: [{
-        text: 'Comprar',
-        value: 'teste'
+        text: 'Adicionar ao carrinho',
+        value: sku.nome
       }]
     }
   })
