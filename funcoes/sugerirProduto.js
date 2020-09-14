@@ -1,6 +1,16 @@
 'use strict';
 
 const api = require('../api')
+const nomesSlotsOrdenados = ['categoria', 'produto', 'sku']
+
+String.prototype.replaceChar=function(c1, c2) {
+  let newStr = "";
+  for(let i=0; i<this.length; i++) this[i]===c1 ? (newStr+=c2) : (newStr+=this[i])
+  return newStr;
+}
+String.prototype.toTitleCase=function() {
+  return this[0].toUpperCase() + this.slice(1);
+}
 
 const getCategorias = async () => {
   const url = 'catalog_system/pub/category/tree/1'
@@ -10,7 +20,7 @@ const getCategorias = async () => {
 
   const result = data.map(result => {
     return {
-      nome: result.name.toLowerCase(),
+      nome: result.name.replaceChar(" ", "_").toLowerCase(),
       id: result.id
     }
   })
@@ -33,22 +43,22 @@ const getProdutos = async (categoria) => {
 
   const result = data.map(produto => {
     return {
-      nome: produto.productName,
+      nome: produto.productName.replaceChar(" ", "_").toLowerCase(),
       id: produto.productId,
-      itens: produto.itens
+      skus: produto.items
     }
   })
 
   return result
 }
 
-const getSKUs = async (idProduto, produto) => {
+const getSKUs = (produto) => {
 
-  // const idProduto = getIdProduto(produto);
+  const idProduto = getIdProduto(produto);
 
   const skusProduto = getSKUProduto(idProduto) // []
 
-  console.log('  --> SKUS:', skusProduto);
+  console.log('  --> SKUS:', skusProduto[0].sellers);
 
   // const url = `catalog_system/pub/products/search?fq=productId:${idProduto}`
 
@@ -61,9 +71,9 @@ const getSKUs = async (idProduto, produto) => {
 
   const result = skusProduto.map(sku => {
     return {
-      nome: sku.name,
+      nome: sku.name.replaceChar(" ", "_").toLowerCase(),
       id: sku.itemId,
-      preco: sku.sellers[0].price,
+      preco: sku.sellers[0].commertialOffer.Price,
       linkCarrinho: sku.sellers[0].addToCartLink,
       imagem: sku.images[0].imageUrl
     }
@@ -95,7 +105,8 @@ async function validate(slots) {
   console.log(' check validation >', produtosAPI !== undefined, produto !== null)
   if (produtosAPI !== undefined && produto !== null) {
     const nomesProdutos = produtosAPI.map(produto => produto.nome)
-    if (produto !== undefined && !nomesProdutos.includes(produto.toLowerCase())) {
+    console.log(nomesProdutos, produto)
+    if (!nomesProdutos.includes(produto.toLowerCase())) {
       return {
         isValid: false,
         violatedSlot: "produto"
@@ -103,12 +114,11 @@ async function validate(slots) {
     }
   }
 
-
-  else {
-    return {
-      isValid: true
-    }
+  
+  return {
+    isValid: true
   }
+  
 
 }
 
@@ -124,16 +134,17 @@ function getIdProduto(produto) {
 
 function getSKUProduto(idProduto) {
   const result = produtosAPI.filter((prod) => prod.id === idProduto);
-  console.log(' Get SKU produto:', idProduto, result, result[0].itens)
-  return result[0].itens;
+  console.log(' Get SKU produto:', idProduto, result)
+  return result[0].skus;
 }
 
 function cardCategorias() {
 
   // console.log(' Categorias da API:', categoriasAPI)
   const botoesCategorias = categoriasAPI.map((categoria) => {
+    console.log(' ... '+categoria.nome)
     return {
-      text: categoria.nome,
+      text: categoria.nome.replaceChar("_", " ").toTitleCase(),
       value: categoria.nome
     }
   })
@@ -153,8 +164,9 @@ function cardProdutos() {
 
   console.log('aaaaaa', produtosAPI)
   const botoesProdutos = produtosAPI.map((produto) => {
+    console.log(' ... '+produto.nome)
     return {
-      text: produto.nome,
+      text: produto.nome.replaceChar("_", " ").toTitleCase(),
       value: produto.nome
     }
   })
@@ -173,15 +185,17 @@ function cardProdutos() {
 
 function cardSKUs() {
 
+  console.log(' <<<>>>> skusAPI', skusAPI)
   const slideCards = skusAPI.map((sku) => {
     return {
-      title: sku.nome,
+      title: sku.nome.replaceChar("_"," ").toUpperCase(),
       subTitle: sku.price,
       imageUrl: sku.imagem,
       attachmentLinkUrl: sku.linkCarrinho,
-      button: {
+      buttons: [{
         text: 'Comprar',
-      }
+        value: 'teste'
+      }]
     }
   })
 
@@ -274,19 +288,20 @@ async function dispatch(intentRequest, callback) {
       // console.log(' CONSOLE 1')
 
       //  [categoria, produto,   sku1, sku2] 
-      const entriesSlots = Object.entries(slots).reverse();    //  ['casacos', 'moletom', null, null] --> proximoSlot
+      // const entriesSlots = Object.entries(slots).reverse();    //  ['casacos', 'moletom', null, null] --> proximoSlot
 
       // console.log('  >> ENTRIES ', entriesSlots);
       // [ ['categoria','blusas'], ['produto', null] ]
 
-      for (let i = 0; i < entriesSlots.length - 1; i++) {
+      for (let i = 0; i < nomesSlotsOrdenados.length - 1; i++) {
 
         // console.log('  >> ', entriesSlots[i])
 
-        const nomeSlotAtual = entriesSlots[i][0];
-        const valorSlotAtual = entriesSlots[i][1];
-        const nomeProximoSlot = entriesSlots[i + 1][0];
-        const valorProximoSlot = entriesSlots[i + 1][1];
+        const nomeSlotAtual = nomesSlotsOrdenados[i];
+        const valorSlotAtual = slots[nomeSlotAtual];
+
+        const nomeProximoSlot = nomesSlotsOrdenados[i + 1];
+        const valorProximoSlot = slots[nomeProximoSlot];
 
         // console.log('  >> ', valorSlotAtual, valorProximoSlot, nomeProximoSlot, nomeSlotAtual)
         //      null           casacos          
@@ -344,6 +359,7 @@ async function dispatch(intentRequest, callback) {
 
     }
     catch (msgErro) {
+      console.log('puts deu ruim!!!!!!!!!!')
       // se cair nesse catch, é pq deu um erro pra pegar o card. Ex: não tem o estoque do item selecionado
       slots[ultimoSlotValidado] = null;
       callback({
