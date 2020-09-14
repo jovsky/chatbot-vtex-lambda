@@ -3,7 +3,7 @@
 const { getCategoriasAPI, getProdutosAPI, getSKUsAPI } = require('../api/api')
 const gerarCard = require('./cards')
 
-const nomesSlotsOrdenados = ['categoria', 'produto', 'sku']
+const nomesSlotsOrdenados = ['categoria', 'produto', 'sku', 'repetirOuAvaliar']
 var categoriasAPI;
 var produtosAPI;
 var skusAPI;
@@ -142,6 +142,25 @@ async function dispatch(intentRequest, callback) {
 
   console.log(' SLOTS: ', slots)
 
+
+  if(slots.repetirOuAvaliar === 'Repetir') {
+    slots.categoria = null;
+    slots.produto = null;
+    slots.sku = null;
+    slots.repetirOuAvaliar = null;
+  }
+
+  if (slots.nome === null) {
+    callback({
+      sessionAttributes: intentRequest.sessionAttributes,
+      dialogAction: {
+        type: 'Delegate',
+        slots
+      }
+    })
+    return;
+  }
+
   // a categoria ainda nao foi informada
   if (slots.categoria === null) {
 
@@ -152,10 +171,6 @@ async function dispatch(intentRequest, callback) {
         intentName: intentRequest.currentIntent.name,
         slots,
         slotToElicit: 'categoria',
-        message: {
-          contentType: 'PlainText',
-          content: 'Para lhe ajudar, precisamos saber que tipo de roupa está procurando. Temos as seguintes categorias:'
-        },
         responseCard: gerarCard.categorias(categoriasAPI)
       }
     })
@@ -245,7 +260,7 @@ async function dispatch(intentRequest, callback) {
   // console.log('  proximoSlot:', proximoSlot, '   ultimoSlotValidado:', ultimoSlotValidado)
 
   // os ultimos slots preenchidos estão validados, agora precisa elicitar o proximo Slot
-  if (proximoSlot !== '' && ultimoSlotValidado !== '') {
+  if (proximoSlot !== '' && ultimoSlotValidado !== '' && ultimoSlotValidado !== 'sku') {
 
     var card, ultimoCard;
 
@@ -306,18 +321,68 @@ async function dispatch(intentRequest, callback) {
 
   }
 
-  callback({
-    sessionAttributes: intentRequest.sessionAttributes,
-    dialogAction: {
-      type: 'ConfirmIntent',
-      slots,
-      intentName: intentRequest.currentIntent.name,
-      message: {
-        contentType: "CustomPayload",
-        content: `\{"message": "Clica aqui para adicionar ao carrinho",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.sku}",\n "name":"Adicionar ao carrinho"\}]\}\}`
+  if (intentRequest.currentIntent.confirmationStatus === 'None' ){
+    callback({
+      sessionAttributes: intentRequest.sessionAttributes,
+      dialogAction: {
+        type: 'ConfirmIntent',
+        slots,
+        intentName: intentRequest.currentIntent.name,
+        // message: {
+        //   contentType: "PlainText",
+        //   content: "Gostaria de adicionar ao carrinho?"
+        // }
+        message: {
+          contentType: "CustomPayload",
+          content: `\{"message": "Adicione ao carrinho e digite "ok" para continuar.,\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.sku}",\n "name":"Adicionar ao carrinho"\}]\}\}`
+        }
       }
-    }
-  })
+    })
+    return;
+  }
+  else if (intentRequest.currentIntent.confirmationStatus === 'Confirmed' || intentRequest.currentIntent.confirmationStatus === 'Denied' ){
+    callback({
+      sessionAttributes: intentRequest.sessionAttributes,
+      dialogAction: {
+        type: 'ElicitSlot',
+        intentName: intentRequest.currentIntent.name,
+        slots,
+        slotToElicit: 'repetirOuAvaliar',
+        message: {
+          contentType: 'PlainText',
+          content: 'Obrigado! Deseja receber mais sugestões ou avaliar o atendimento?'
+        },
+        responseCard: {
+          version: 1,
+          contentType: "application/vnd.amazonaws.card.generic",
+          genericAttachments: [
+            {
+              buttons: [
+                {
+                  text: 'Repetir',
+                  value: 'Repetir'
+                },
+                {
+                  text: 'Avaliar',
+                  value: 'Avaliar'
+                }
+              ]
+            }
+          ]
+        }
+      }
+    })
+    return
+    
+  }
+
+  callback({
+      sessionAttributes: intentRequest.sessionAttributes,
+      dialogAction: {
+        type: 'Delegate',
+        slots
+      }
+    })
 
   return
 }
