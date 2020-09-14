@@ -1,94 +1,102 @@
 'use strict';
 
-const api = require('../api')
+const { getCategoriasAPI, getProdutosAPI, getSKUsAPI } = require('../api/api')
+const gerarCard = require('./cards')
+
 const nomesSlotsOrdenados = ['categoria', 'produto', 'sku']
-
-String.prototype.replaceChar=function(c1, c2) {
-  let newStr = "";
-  for(let i=0; i<this.length; i++) this[i]===c1 ? (newStr+=c2) : (newStr+=this[i])
-  return newStr;
-}
-String.prototype.toTitleCase=function() {
-  return this[0].toUpperCase() + this.slice(1);
-}
-
-const getCategorias = async () => {
-  const url = 'catalog_system/pub/category/tree/1'
-
-  const response = await api.get(url)
-  const data = response.data
-
-  const result = data.map(result => {
-    return {
-      nome: result.name.replaceChar(" ", "_").toLowerCase(),
-      id: result.id
-    }
-  })
-
-  return result
-}
-
-const getProdutos = async (categoria) => {
-
-  const idCategoria = getIdCategoria(categoria);
-
-  const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
-
-  const response = await api.get(url)
-  const data = response.data
-
-  if (data.length === 0 || data === null) {
-    throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
-  }
-
-  const result = data.map(produto => {
-    return {
-      nome: produto.productName.replaceChar(" ", "_").toLowerCase(),
-      id: produto.productId,
-      skus: produto.items
-    }
-  })
-
-  return result
-}
-
-const getSKUs = (produto) => {
-
-  const idProduto = getIdProduto(produto);
-
-  const skusProduto = getSKUProduto(idProduto) // []
-
-  console.log('  --> SKUS:', skusProduto[0].sellers);
-
-  // const url = `catalog_system/pub/products/search?fq=productId:${idProduto}`
-
-  // const response = await api.get(url)
-  // const data = response.data
-
-  // if(data.length === 0 || data === null) {
-  //   throw new Error(`Lamento, estamos sem estoque de ${produto}. Faça outra escolha.`);
-  // }
-
-  const result = skusProduto.map(sku => {
-    return {
-      nome: sku.name.replaceChar(" ", "_").toLowerCase(),
-      id: sku.itemId,
-      preco: sku.sellers[0].commertialOffer.Price,
-      linkCarrinho: sku.sellers[0].addToCartLink,
-      imagem: sku.images[0].imageUrl
-    }
-  })
-
-  console.log(' Resultttt', result)
-
-  return result
-
-}
-
 var categoriasAPI;
 var produtosAPI;
 var skusAPI;
 
+
+// String.prototype.replaceChar=function(c1, c2) {
+//   let newStr = "";
+//   for(let i=0; i<this.length; i++) this[i]===c1 ? (newStr+=c2) : (newStr+=this[i])
+//   return newStr;
+// }
+// String.prototype.toTitleCase=function() {
+//   return this[0].toUpperCase() + this.slice(1);
+// }
+
+// const getCategorias = async () => {
+//   const url = 'catalog_system/pub/category/tree/1'
+
+//   const response = await api.get(url)
+//   const data = response.data
+
+//   const result = data.map(result => {
+//     return {
+//       nome: replaceChar(result.name.toLowerCase(), " ", "_"),
+//       id: result.id
+//     }
+//   })
+
+//   return result
+// }
+
+// const getProdutos = async (categoria) => {
+
+//   const idCategoria = getIdCategoria(categoria);
+
+//   const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
+
+//   const response = await api.get(url)
+//   const data = response.data
+
+//   if (data.length === 0 || data === null) {
+//     throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
+//   }
+
+//   const result = data.map(produto => {
+//     return {
+//       nome: replaceChar(produto.productName.toLowerCase()," ", "_"),
+//       id: produto.productId,
+//       skus: produto.items
+//     }
+//   })
+
+//   return result
+// }
+
+// const getSKUs = (produto) => {
+
+//   const idProduto = getIdProduto(produto);
+
+//   const skusProduto = getSKUProduto(idProduto) // []
+
+//   console.log('  --> SKUS:', skusProduto[0].sellers);
+
+//   const result = skusProduto.map(sku => {
+//     return {
+//       nome: replaceChar(sku.name.toLowerCase(), " ", "_"),
+//       id: sku.itemId,
+//       preco: sku.sellers[0].commertialOffer.Price,
+//       linkCarrinho: sku.sellers[0].addToCartLink,
+//       imagem: sku.images[0].imageUrl
+//     }
+//   })
+
+//   console.log(' Resultttt', result)
+
+//   return result
+  
+// }
+
+// function getIdCategoria(nomeCategoria) {
+//   const result = categoriasAPI.filter((cat) => cat.nome === nomeCategoria);
+//   return result[0].id;
+// }
+
+// function getIdProduto(nomeProduto) {
+//   const result = produtosAPI.filter((prod) => prod.nome === nomeProduto);
+//   return result[0].id;
+// }
+
+// function getSKUProduto(idProduto) {
+//   const result = produtosAPI.filter((prod) => prod.id === idProduto);
+//   console.log(' Get SKU produto:', idProduto, result)
+//   return result[0].skus;
+// }
 
 async function validate(slots) {
 
@@ -122,95 +130,13 @@ async function validate(slots) {
 
 }
 
-function getIdCategoria(categoria) {
-  const result = categoriasAPI.filter((cat) => cat.nome === categoria);
-  return result[0].id;
-}
-
-function getIdProduto(produto) {
-  const result = produtosAPI.filter((prod) => prod.nome === produto);
-  return result[0].id;
-}
-
-function getSKUProduto(idProduto) {
-  const result = produtosAPI.filter((prod) => prod.id === idProduto);
-  console.log(' Get SKU produto:', idProduto, result)
-  return result[0].skus;
-}
-
-function cardCategorias() {
-
-  // console.log(' Categorias da API:', categoriasAPI)
-  const botoesCategorias = categoriasAPI.map((categoria) => {
-    console.log(' ... '+categoria.nome)
-    return {
-      text: categoria.nome.replaceChar("_", " ").toTitleCase(),
-      value: categoria.nome
-    }
-  })
-
-  return {
-    version: 1,
-    contentType: "application/vnd.amazonaws.card.generic",
-    genericAttachments: [
-      {
-        buttons: botoesCategorias
-      }
-    ]
-  }
-}
-
-function cardProdutos() {
-
-  console.log('aaaaaa', produtosAPI)
-  const botoesProdutos = produtosAPI.map((produto) => {
-    console.log(' ... '+produto.nome)
-    return {
-      text: produto.nome.replaceChar("_", " ").toTitleCase(),
-      value: produto.nome
-    }
-  })
-
-  return {
-    version: 1,
-    contentType: "application/vnd.amazonaws.card.generic",
-    genericAttachments: [
-      {
-        buttons: botoesProdutos
-      }
-    ]
-  }
-}
-
-function cardSKUs() {
-
-  console.log(' <<<>>>> skusAPI', skusAPI)
-  const slideCards = skusAPI.map((sku) => {
-    return {
-      title: sku.nome.replaceChar("_"," ").toUpperCase(),
-      subTitle: `R$ ${sku.preco}`,
-      imageUrl: sku.imagem,
-      attachmentLinkUrl: sku.linkCarrinho,
-      buttons: [{
-        text: 'Adicionar ao carrinho',
-        value: sku.nome
-      }]
-    }
-  })
-
-  return {
-    version: 1,
-    contentType: "application/vnd.amazonaws.card.generic",
-    genericAttachments: slideCards
-  }
-}
 
 async function dispatch(intentRequest, callback) {
 
   var ultimoSlotValidado = '';
   var proximoSlot = '';
 
-  categoriasAPI = await getCategorias();
+  categoriasAPI = await getCategoriasAPI();
 
   const slots = intentRequest.currentIntent.slots;
 
@@ -230,7 +156,7 @@ async function dispatch(intentRequest, callback) {
           contentType: 'PlainText',
           content: 'Para lhe ajudar, precisamos saber que tipo de roupa está procurando. Temos as seguintes categorias:'
         },
-        responseCard: cardCategorias()
+        responseCard: gerarCard.categorias(categoriasAPI)
       }
     })
     return
@@ -251,13 +177,13 @@ async function dispatch(intentRequest, callback) {
 
       switch (resultValidation.violatedSlot) {
         case 'categoria':
-          card = cardCategorias();
+          card = gerarCard.categorias(categoriasAPI);
           break;
         case 'produto':
-          card = cardProdutos();
+          card = gerarCard.produtos(produtosAPI);
           break;
         case 'sku':
-          card = cardSKUs();
+          card = gerarCard.SKUs(skusAPI);
           break;
         default:
           break;
@@ -328,14 +254,14 @@ async function dispatch(intentRequest, callback) {
         case 'categoria':
           break;
         case 'produto':
-          produtosAPI = await getProdutos(slots.categoria);
-          card = cardProdutos();
-          ultimoCard = cardCategorias();
+          produtosAPI = await getProdutosAPI(slots.categoria, categoriasAPI);
+          card = gerarCard.produtos(produtosAPI);
+          ultimoCard = gerarCard.categorias(categoriasAPI);
           break;
         case 'sku':
-          skusAPI = getSKUs(slots.produto);
-          card = cardSKUs();
-          ultimoCard = cardProdutos();
+          skusAPI = getSKUsAPI(slots.produto, produtosAPI);
+          card = gerarCard.SKUs(skusAPI);
+          ultimoCard = gerarCard.produtos(produtosAPI);
           break;
         default:
           break;
