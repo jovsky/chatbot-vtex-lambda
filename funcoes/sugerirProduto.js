@@ -182,7 +182,6 @@ function cardProdutos() {
   }
 }
 
-
 function cardSKUs() {
 
   console.log(' <<<>>>> skusAPI', skusAPI)
