@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 module.exports = axios.create({
-  baseURL: "https://hiringcoders14.vtexcommercestable.com.br/api",
+  baseURL: "https://hiringcoders14.myvtex.com/api",
   method: "GET",
   headers: {
     'accept': 'application/json',
