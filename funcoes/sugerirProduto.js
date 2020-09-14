@@ -1,15 +1,6 @@
 'use strict';
-    
+
 const api = require('../api')
-
-const CONTAINER_TIPOROUPAS = ["camisa", "calca", "calça", "sandalia", "blusa", "camiseta", "chinelo", "sapato", "calçado", "tênis", "tenis",
-          "camisas", "calcas", "sandalias", "blusas", "camisetas", "chinelos", "sapatos", "calcados", "calçados"];
-const CONTAINER_CATEGORIAS = ["social", "sociais", "esportivo", "esportivos", "esportiva", "esportivas", "casual", "casuais"];
-const CONTAINER_NUMERO_PMG = ["pp", "p", "m", "g", "xg"];
-const CONTAINER_NUMERO_NUM = ["35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46"];
-const CONTAINER_COR = ["azul", "preto", "verde", "amarelo", "branco", "laranja", "vermelho", "marrom",
-                        "preta", "amarela", "branca", "vermelha"];
-
 
 const getCategorias = async () => {
   const url = 'catalog_system/pub/category/tree/1'
@@ -27,23 +18,24 @@ const getCategorias = async () => {
   return result
 }
 
-const getProdutos = async (idCategoria, categoria) => {
+const getProdutos = async (categoria) => {
 
-  // console.log(' ID do blusas:', idCategoria)
+  const idCategoria = getIdCategoria(categoria);
 
   const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
 
   const response = await api.get(url)
   const data = response.data
 
-  if(data.length === 0 || data === null) {
+  if (data.length === 0 || data === null) {
     throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
   }
 
-  const result = data.map( produto => {
+  const result = data.map(produto => {
     return {
       nome: produto.productName,
-      id: produto.productId
+      id: produto.productId,
+      itens: produto.itens
     }
   })
 
@@ -52,31 +44,47 @@ const getProdutos = async (idCategoria, categoria) => {
 
 const getSKUs = async (idProduto, produto) => {
 
-  const url = `catalog_system/pub/products/search?fq=productId:${idProduto}`
+  // const idProduto = getIdProduto(produto);
 
-  const response = await api.get(url)
-  const data = response.data
+  const skusProduto = getSKUProduto(idProduto) // []
 
-  if(data.length === 0 || data === null) {
-    throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
-  }
+  console.log('  --> SKUS:', skusProduto);
 
-  const result = data.map( produto => {
+  // const url = `catalog_system/pub/products/search?fq=productId:${idProduto}`
+
+  // const response = await api.get(url)
+  // const data = response.data
+
+  // if(data.length === 0 || data === null) {
+  //   throw new Error(`Lamento, estamos sem estoque de ${produto}. Faça outra escolha.`);
+  // }
+
+  const result = skusProduto.map(sku => {
     return {
-      nome: produto.productName,
-      id: produto.productId
+      nome: sku.name,
+      id: sku.itemId,
+      preco: sku.sellers[0].price,
+      linkCarrinho: sku.sellers[0].addToCartLink,
+      imagem: sku.images[0].imageUrl
     }
   })
+
+  console.log(' Resultttt', result)
 
   return result
 
 }
 
-async function validate(slots, categoria, produtos=undefined) {
+var categoriasAPI;
+var produtosAPI;
+var skusAPI;
 
-  const categoria = slots.categoria;
-  
-  const nomesCategorias = categorias.map( categoria => categoria.nome)
+
+async function validate(slots) {
+
+  const { categoria, produto } = slots;
+
+  const nomesCategorias = categoriasAPI.map(categoria => categoria.nome)
   if (!nomesCategorias.includes(categoria.toLowerCase())) {
     return {
       isValid: false,
@@ -84,11 +92,14 @@ async function validate(slots, categoria, produtos=undefined) {
     }
   }
 
-  const nomesProdutos = produtos.map( produto => produto.nome)
-  if (!nomesProdutos.includes(produto.toLowerCase())) {
-    return {
-      isValid: false,
-      violatedSlot: "produto"
+  console.log(' check validation >', produtosAPI !== undefined, produto !== null)
+  if (produtosAPI !== undefined && produto !== null) {
+    const nomesProdutos = produtosAPI.map(produto => produto.nome)
+    if (produto !== undefined && !nomesProdutos.includes(produto.toLowerCase())) {
+      return {
+        isValid: false,
+        violatedSlot: "produto"
+      }
     }
   }
 
@@ -101,39 +112,26 @@ async function validate(slots, categoria, produtos=undefined) {
 
 }
 
-async function cardProduto(categoria, categorias) {
-
-  const result = categorias.filter( (cat) => cat.nome === categoria);
-  const idCategoria = result[0].id;
-
-
-  const produtosAPI = await getProdutos(idCategoria, categoria);
-
-
-  const botoesProdutos = produtosAPI.map( (produto) => {
-    return {
-      text: produto.nome,
-      value: produto.nome
-    }
-  })
-
-  return {
-    version: 1,
-    contentType: "application/vnd.amazonaws.card.generic",
-    genericAttachments: [
-      {
-        buttons: botoesProdutos
-      }
-    ]
-  }
+function getIdCategoria(categoria) {
+  const result = categoriasAPI.filter((cat) => cat.nome === categoria);
+  return result[0].id;
 }
 
-async function cardCategorias() {
+function getIdProduto(produto) {
+  const result = produtosAPI.filter((prod) => prod.nome === produto);
+  return result[0].id;
+}
 
-  const categorias = await getCategorias()  // ['blusa', 'calca', 'sapatos']
-  console.log(' Categorias da API:', categorias)
+function getSKUProduto(idProduto) {
+  const result = produtosAPI.filter((prod) => prod.id === idProduto);
+  console.log(' Get SKU produto:', idProduto, result, result[0].itens)
+  return result[0].itens;
+}
 
-  const botoesCategorias = categorias.map( (categoria) => {
+function cardCategorias() {
+
+  // console.log(' Categorias da API:', categoriasAPI)
+  const botoesCategorias = categoriasAPI.map((categoria) => {
     return {
       text: categoria.nome,
       value: categoria.nome
@@ -151,20 +149,62 @@ async function cardCategorias() {
   }
 }
 
+function cardProdutos() {
+
+  console.log('aaaaaa', produtosAPI)
+  const botoesProdutos = produtosAPI.map((produto) => {
+    return {
+      text: produto.nome,
+      value: produto.nome
+    }
+  })
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        buttons: botoesProdutos
+      }
+    ]
+  }
+}
+
+
+function cardSKUs() {
+
+  const slideCards = skusAPI.map((sku) => {
+    return {
+      title: sku.nome,
+      subTitle: sku.price,
+      imageUrl: sku.imagem,
+      attachmentLinkUrl: sku.linkCarrinho,
+      button: {
+        text: 'Comprar',
+      }
+    }
+  })
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: slideCards
+  }
+}
 
 async function dispatch(intentRequest, callback) {
 
-  let categoriaValida = false;
-  let produtoValido = false;
-  
-  
+  var ultimoSlotValidado = '';
+  var proximoSlot = '';
+
+  categoriasAPI = await getCategorias();
+
   const slots = intentRequest.currentIntent.slots;
-  var categorias;
 
   console.log(' SLOTS: ', slots)
-  
+
   // a categoria ainda nao foi informada
-  if (slots.categoria === null && slots.produto === null) {
+  if (slots.categoria === null) {
 
     callback({
       sessionAttributes: intentRequest.sessionAttributes,
@@ -177,7 +217,7 @@ async function dispatch(intentRequest, callback) {
           contentType: 'PlainText',
           content: 'Para lhe ajudar, precisamos saber que tipo de roupa está procurando. Temos as seguintes categorias:'
         },
-        responseCard: await cardCategorias()
+        responseCard: cardCategorias()
       }
     })
     return
@@ -185,102 +225,145 @@ async function dispatch(intentRequest, callback) {
   }
 
   // verificar se a categoria ainda precisa ser validada
-  else if (slots.categoria !== null && slots.produto === null) {
-    
-    // console.log(' ENTROU NO SEGUNDO IF', slots.categoria, slots.produto)
+  if (slots.categoria !== null) {
 
-    categorias = await getCategorias(); 
+    const resultValidation = await validate(slots);
 
-    const resultValidation = await validate(slots, categorias);
-
-    // se a categoria for ivnalida
+    // se alguma slot for invalida
     if (!resultValidation.isValid) {
-      slots.categoria = null;
+
+      slots[resultValidation.violatedSlot] = null;
+
+      var card;
+
+      switch (resultValidation.violatedSlot) {
+        case 'categoria':
+          card = cardCategorias();
+          break;
+        case 'produto':
+          card = cardProdutos();
+          break;
+        case 'sku':
+          card = cardSKUs();
+          break;
+        default:
+          break;
+      }
+
       callback({
         sessionAttributes: intentRequest.sessionAttributes,
         dialogAction: {
           type: 'ElicitSlot',
           intentName: intentRequest.currentIntent.name,
           slots,
-          slotToElicit: 'categoria',
+          slotToElicit: resultValidation.violatedSlot,
           message: {
             contentType: 'PlainText',
-            content: 'Desculpe, não temos esta categoria. Temos as seguintes:'
+            content: 'Desculpe, não temos a opção escolhida. Temos as seguintes:'
           },
-          responseCard: await cardCategorias()
+          responseCard: card
         }
       })
       return
     }
-    // se a cateogira está certa
+
+    // se todas slots preenchidos forem validos
+    // determinar o proximo slot
     else {
-      categoriaValida = true;
+
+      // console.log(' CONSOLE 1')
+
+      //  [categoria, produto,   sku1, sku2] 
+      const entriesSlots = Object.entries(slots).reverse();    //  ['casacos', 'moletom', null, null] --> proximoSlot
+
+      // console.log('  >> ENTRIES ', entriesSlots);
+      // [ ['categoria','blusas'], ['produto', null] ]
+
+      for (let i = 0; i < entriesSlots.length - 1; i++) {
+
+        // console.log('  >> ', entriesSlots[i])
+
+        const nomeSlotAtual = entriesSlots[i][0];
+        const valorSlotAtual = entriesSlots[i][1];
+        const nomeProximoSlot = entriesSlots[i + 1][0];
+        const valorProximoSlot = entriesSlots[i + 1][1];
+
+        // console.log('  >> ', valorSlotAtual, valorProximoSlot, nomeProximoSlot, nomeSlotAtual)
+        //      null           casacos          
+
+        if (valorSlotAtual !== null && valorProximoSlot === null) {
+          ultimoSlotValidado = nomeSlotAtual;
+          proximoSlot = nomeProximoSlot;
+          // console.log('  proximoSlot:', proximoSlot, '   ultimoSlotValidado:', ultimoSlotValidado)
+          break;
+        }
+      }
     }
 
   }
-  
-  // categoria já está ok, agora vamos mandar o response Card com as opcoes da API
-  if (categoriaValida) {
 
-    var card;
+  // console.log('  proximoSlot:', proximoSlot, '   ultimoSlotValidado:', ultimoSlotValidado)
 
-    try{
-      card = await cardProduto(slots.categoria, categorias);
-    }
+  // os ultimos slots preenchidos estão validados, agora precisa elicitar o proximo Slot
+  if (proximoSlot !== '' && ultimoSlotValidado !== '') {
 
-    catch (msgErro) {
-      slots.categoria = null;
+    var card, ultimoCard;
+
+    try {
+      switch (proximoSlot) {
+        case 'categoria':
+          break;
+        case 'produto':
+          produtosAPI = await getProdutos(slots.categoria);
+          card = cardProdutos();
+          ultimoCard = cardCategorias();
+          break;
+        case 'sku':
+          skusAPI = getSKUs(slots.produto);
+          card = cardSKUs();
+          ultimoCard = cardProdutos();
+          break;
+        default:
+          break;
+      }
+
       callback({
         sessionAttributes: intentRequest.sessionAttributes,
         dialogAction: {
           type: 'ElicitSlot',
           intentName: intentRequest.currentIntent.name,
           slots,
-          slotToElicit: 'categoria',
+          slotToElicit: proximoSlot,
+          responseCard: card
+        }
+      })
+
+      console.log(' proximo slotttt:', proximoSlot)
+
+      return
+
+    }
+    catch (msgErro) {
+      // se cair nesse catch, é pq deu um erro pra pegar o card. Ex: não tem o estoque do item selecionado
+      slots[ultimoSlotValidado] = null;
+      callback({
+        sessionAttributes: intentRequest.sessionAttributes,
+        dialogAction: {
+          type: 'ElicitSlot',
+          intentName: intentRequest.currentIntent.name,
+          slots,
+          slotToElicit: ultimoSlotValidado,
           message: {
             contentType: 'PlainText',
             content: msgErro.message
           },
-          responseCard: await cardCategorias()
+          responseCard: ultimoCard
         }
       })
       return
     }
-    
-
-    callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'ElicitSlot',
-        intentName: intentRequest.currentIntent.name,
-        slots,
-        slotToElicit: 'produto',
-        responseCard: card
-      }
-    })
-    return
 
   }
-
-
-  // // se algum slot está invalido
-  // if (!resultValidation.isValid) {
-  //   slots[resultValidation.violatedSlot] = null;
-  //   callback({
-  //     sessionAttributes: intentRequest.sessionAttributes,
-  //     dialogAction: {
-  //       type: 'ElicitSlot',
-  //       intentName: intentRequest.currentIntent.name,
-  //       slots,
-  //       slotToElicit: resultValidation.violatedSlot,
-  //       responseCard: resultValidation.responseCard
-  //     }
-  //   })
-  //   return
-  // }
-  
-  // // todos slots estão válidos
-
 
   callback({
     sessionAttributes: intentRequest.sessionAttributes,
