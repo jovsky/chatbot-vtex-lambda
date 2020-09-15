@@ -1,4 +1,4 @@
-### Chatbot Vtex AWS Lambda
+### Chatbot VTEX AWS Lambda
 
 #### Basic configuration
 
