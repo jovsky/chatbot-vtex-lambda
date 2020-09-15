@@ -6,7 +6,7 @@ module.exports.categorias = function(categoriasAPI) {
   const botoesCategorias = categoriasAPI.map((categoria) => {
     // console.log(' ... '+categoria.nome)
     return {
-      text: replaceChar(toTitleCase(categoria.nome), "_", " "),
+      text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
       value: categoria.nome
     }
   })
@@ -27,9 +27,9 @@ module.exports.produtos = function (produtosAPI) {
 
   // console.log('aaaaaa', produtosAPI)
   const botoesProdutos = produtosAPI.map((produto) => {
-    console.log(' ... '+produto.nome)
+    // console.log(' ... '+produto.nome)
     return {
-      text: replaceChar(toTitleCase(produto.nome), "_", " "),
+      text: replaceChar(produto.nome.toUpperCase(), "_", " "),
       value: produto.nome
     }
   })
@@ -50,20 +50,43 @@ module.exports.SKUs = function(skusAPI) {
 
   const slideCards = skusAPI.map((sku) => {
     return {
-      title: replaceChar(toTitleCase(sku.nome), "_", " "),
+      title: replaceChar(sku.nome.toUpperCase(), "_", " "),
       subTitle: `R$ ${sku.preco}`,
       imageUrl: sku.imagem,
       attachmentLinkUrl: sku.linkCarrinho,
       buttons: [{
         text: 'Gostei',
-        value: sku.linkCarrinho
+        value: sku.nome
       }]
     }
   })
+
 
   return {
     version: 1,
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: slideCards
+  }
+}
+
+module.exports.repetirOuAvaliar = function() {
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: "Mais sugestões ou avaliar o atendimento?",
+        buttons: [
+          {
+            text: 'Mais sugestões',
+            value: 'Mais'
+          },
+          {
+            text: 'Avaliar',
+            value: 'Avaliar'
+          }
+        ]
+      }
+    ]
   }
 }

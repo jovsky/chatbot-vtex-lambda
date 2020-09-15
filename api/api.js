@@ -2,7 +2,7 @@ const axios = require('axios');
 const { replaceChar } = require('../util/util')
 
 const api = axios.create({
-  baseURL: "https://storebot--hiringcoders14.myvtex.com/api",
+  baseURL: "https://hiringcoders14.myvtex.com/api/",
   method: "GET",
   headers: {
     'accept': 'application/json',
@@ -24,7 +24,7 @@ function getIdProduto(nomeProduto, produtosAPI) {
 
 function getSKUProduto(idProduto, produtosAPI) {
   const result = produtosAPI.filter((prod) => prod.id === idProduto);
-  console.log(' Get SKU produto:', idProduto, result)
+  // console.log(' Get SKU produto:', idProduto, result)
   return result[0].skus;
 }
 
@@ -74,7 +74,7 @@ module.exports.getSKUsAPI = (produto, produtosAPI) => {
 
   const skusProduto = getSKUProduto(idProduto, produtosAPI) // []
 
-  console.log('  --> SKUS:', skusProduto[0].sellers);
+  // console.log('  --> SKUS:', skusProduto[0].sellers);
 
   const result = skusProduto.map(sku => {
     return {
@@ -86,8 +86,16 @@ module.exports.getSKUsAPI = (produto, produtosAPI) => {
     }
   })
 
-  console.log(' Resultttt', result)
+  // console.log(' Resultttt', result)
 
   return result
   
+}
+
+module.exports.getLinkSKUsAPI = (skusAPI, nomeSKU) => {
+
+  const [sku] = skusAPI.filter( sku => sku.nome === nomeSKU)
+  console.log('  get link:', nomeSKU, sku.linkCarrinho)
+  return sku.linkCarrinho;
+
 }

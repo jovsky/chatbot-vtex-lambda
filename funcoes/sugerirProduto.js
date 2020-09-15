@@ -1,106 +1,17 @@
 'use strict';
 
-const { getCategoriasAPI, getProdutosAPI, getSKUsAPI } = require('../api/api')
-const gerarCard = require('./cards')
+const { getCategoriasAPI, getProdutosAPI, getSKUsAPI, getLinkSKUsAPI } = require('../api/api')
+const lexResponse = require('../lex/responses');
+const gerarCard = require('./cards');
 
-const nomesSlotsOrdenados = ['categoria', 'produto', 'sku', 'repetirOuAvaliar']
+const nomesSlotsOrdenados = ['categoria', 'produto', 'sku', '​linkCarrinho', 'repetirOuAvaliar']
 var categoriasAPI;
 var produtosAPI;
 var skusAPI;
 
-
-// String.prototype.replaceChar=function(c1, c2) {
-//   let newStr = "";
-//   for(let i=0; i<this.length; i++) this[i]===c1 ? (newStr+=c2) : (newStr+=this[i])
-//   return newStr;
-// }
-// String.prototype.toTitleCase=function() {
-//   return this[0].toUpperCase() + this.slice(1);
-// }
-
-// const getCategorias = async () => {
-//   const url = 'catalog_system/pub/category/tree/1'
-
-//   const response = await api.get(url)
-//   const data = response.data
-
-//   const result = data.map(result => {
-//     return {
-//       nome: replaceChar(result.name.toLowerCase(), " ", "_"),
-//       id: result.id
-//     }
-//   })
-
-//   return result
-// }
-
-// const getProdutos = async (categoria) => {
-
-//   const idCategoria = getIdCategoria(categoria);
-
-//   const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
-
-//   const response = await api.get(url)
-//   const data = response.data
-
-//   if (data.length === 0 || data === null) {
-//     throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
-//   }
-
-//   const result = data.map(produto => {
-//     return {
-//       nome: replaceChar(produto.productName.toLowerCase()," ", "_"),
-//       id: produto.productId,
-//       skus: produto.items
-//     }
-//   })
-
-//   return result
-// }
-
-// const getSKUs = (produto) => {
-
-//   const idProduto = getIdProduto(produto);
-
-//   const skusProduto = getSKUProduto(idProduto) // []
-
-//   console.log('  --> SKUS:', skusProduto[0].sellers);
-
-//   const result = skusProduto.map(sku => {
-//     return {
-//       nome: replaceChar(sku.name.toLowerCase(), " ", "_"),
-//       id: sku.itemId,
-//       preco: sku.sellers[0].commertialOffer.Price,
-//       linkCarrinho: sku.sellers[0].addToCartLink,
-//       imagem: sku.images[0].imageUrl
-//     }
-//   })
-
-//   console.log(' Resultttt', result)
-
-//   return result
-  
-// }
-
-// function getIdCategoria(nomeCategoria) {
-//   const result = categoriasAPI.filter((cat) => cat.nome === nomeCategoria);
-//   return result[0].id;
-// }
-
-// function getIdProduto(nomeProduto) {
-//   const result = produtosAPI.filter((prod) => prod.nome === nomeProduto);
-//   return result[0].id;
-// }
-
-// function getSKUProduto(idProduto) {
-//   const result = produtosAPI.filter((prod) => prod.id === idProduto);
-//   console.log(' Get SKU produto:', idProduto, result)
-//   return result[0].skus;
-// }
-
 async function validate(slots) {
 
-  const { categoria, produto } = slots;
+  const { categoria, produto, sku } = slots;
 
   const nomesCategorias = categoriasAPI.map(categoria => categoria.nome)
   if (!nomesCategorias.includes(categoria.toLowerCase())) {
@@ -110,14 +21,27 @@ async function validate(slots) {
     }
   }
 
-  console.log(' check validation >', produtosAPI !== undefined, produto !== null)
+
+  // console.log(' check validation prods >', produtosAPI !== undefined, produto !== null)
   if (produtosAPI !== undefined && produto !== null) {
     const nomesProdutos = produtosAPI.map(produto => produto.nome)
-    console.log(nomesProdutos, produto)
+    // console.log(nomesProdutos, produto)
     if (!nomesProdutos.includes(produto.toLowerCase())) {
       return {
         isValid: false,
         violatedSlot: "produto"
+      }
+    }
+  }
+
+  // console.log(' check validation skus >', skusAPI !== undefined, sku !== null)
+  if (skusAPI !== undefined && sku !== null) {
+    const nomesSKUs = skusAPI.map(sku => sku.nome)
+    // console.log(nomesSKUs, sku)
+    if (!nomesSKUs.includes(sku.toLowerCase())) {
+      return {
+        isValid: false,
+        violatedSlot: "sku"
       }
     }
   }
@@ -135,45 +59,29 @@ async function dispatch(intentRequest, callback) {
 
   var ultimoSlotValidado = '';
   var proximoSlot = '';
+  var card, ultimoCard;
 
   categoriasAPI = await getCategoriasAPI();
 
   const slots = intentRequest.currentIntent.slots;
 
-  console.log(' SLOTS: ', slots)
-
-
-  if(slots.repetirOuAvaliar === 'Repetir') {
+  if(slots.repetirOuAvaliar === 'Mais') {
     slots.categoria = null;
     slots.produto = null;
     slots.sku = null;
     slots.repetirOuAvaliar = null;
+    slots.linkCarrinho = null;
   }
 
   if (slots.nome === null) {
-    callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'Delegate',
-        slots
-      }
-    })
+    lexResponse.delegate(intentRequest.sessionAttributes, slots, callback)
     return;
   }
 
   // a categoria ainda nao foi informada
   if (slots.categoria === null) {
 
-    callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'ElicitSlot',
-        intentName: intentRequest.currentIntent.name,
-        slots,
-        slotToElicit: 'categoria',
-        responseCard: gerarCard.categorias(categoriasAPI)
-      }
-    })
+    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'categoria', undefined, gerarCard.categorias(categoriasAPI), callback)
     return
 
   }
@@ -182,6 +90,7 @@ async function dispatch(intentRequest, callback) {
   if (slots.categoria !== null) {
 
     const resultValidation = await validate(slots);
+    // console.log(' validação:', resultValidation.isValid, resultValidation.violatedSlot)
 
     // se alguma slot for invalida
     if (!resultValidation.isValid) {
@@ -198,41 +107,23 @@ async function dispatch(intentRequest, callback) {
           card = gerarCard.produtos(produtosAPI);
           break;
         case 'sku':
-          card = gerarCard.SKUs(skusAPI);
+          card = gerarCard.SKUs(skusAPI).card;
           break;
         default:
           break;
       }
 
-      callback({
-        sessionAttributes: intentRequest.sessionAttributes,
-        dialogAction: {
-          type: 'ElicitSlot',
-          intentName: intentRequest.currentIntent.name,
-          slots,
-          slotToElicit: resultValidation.violatedSlot,
-          message: {
-            contentType: 'PlainText',
-            content: 'Desculpe, não temos a opção escolhida. Temos as seguintes:'
-          },
-          responseCard: card
-        }
-      })
+      const message = {
+        contentType: 'PlainText',
+        content: 'Desculpe, não temos a opção escolhida. Temos as seguintes:'
+      }
+      lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, resultValidation.violatedSlot, message, card, callback)
       return
     }
 
-    // se todas slots preenchidos forem validos
-    // determinar o proximo slot
     else {
 
-      // console.log(' CONSOLE 1')
-
-      //  [categoria, produto,   sku1, sku2] 
-      // const entriesSlots = Object.entries(slots).reverse();    //  ['casacos', 'moletom', null, null] --> proximoSlot
-
-      // console.log('  >> ENTRIES ', entriesSlots);
-      // [ ['categoria','blusas'], ['produto', null] ]
-
+      // console.log(' antes do for:', slots)
       for (let i = 0; i < nomesSlotsOrdenados.length - 1; i++) {
 
         // console.log('  >> ', entriesSlots[i])
@@ -243,147 +134,79 @@ async function dispatch(intentRequest, callback) {
         const nomeProximoSlot = nomesSlotsOrdenados[i + 1];
         const valorProximoSlot = slots[nomeProximoSlot];
 
-        // console.log('  >> ', valorSlotAtual, valorProximoSlot, nomeProximoSlot, nomeSlotAtual)
-        //      null           casacos          
+        // console.log('  >> ', nomeSlotAtual, valorSlotAtual, nomeProximoSlot, valorProximoSlot )
+        // console.log('  >>> ', valorSlotAtual != null && valorProximoSlot == null)            
 
-        if (valorSlotAtual !== null && valorProximoSlot === null) {
+
+        /* DEFINIU O ULTIMO SLOT VALIDADO */
+
+        if (valorSlotAtual != null && valorProximoSlot == null) {
           ultimoSlotValidado = nomeSlotAtual;
           proximoSlot = nomeProximoSlot;
-          // console.log('  proximoSlot:', proximoSlot, '   ultimoSlotValidado:', ultimoSlotValidado)
-          break;
+
+          // DETERMINAR O PRÓXIMO SLOT A PERGUNTAR
+          try {
+            switch (ultimoSlotValidado) {
+              case 'categoria':
+                ultimoCard = gerarCard.categorias(categoriasAPI);
+                produtosAPI = await getProdutosAPI(slots.categoria, categoriasAPI);
+                card = gerarCard.produtos(produtosAPI);
+                break;
+              case 'produto':
+                ultimoCard = gerarCard.produtos(produtosAPI, slots.sku);
+                skusAPI = getSKUsAPI(slots.produto, produtosAPI);
+                card = gerarCard.SKUs(skusAPI);
+                break;
+              case 'sku':
+                slots.linkCarrinho = getLinkSKUsAPI(skusAPI, slots.sku);
+                break;
+              default:
+                break;
+            }
+      
+            if (ultimoSlotValidado !== 'sku') {
+              lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, proximoSlot, undefined, card, callback)
+              return
+            }
+            break;
+      
+          }
+          catch (msgErro) {
+            slots[ultimoSlotValidado] = null;
+            const message = {
+              contentType: 'PlainText',
+              content: msgErro.message
+            }
+            lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, ultimoSlotValidado, message, ultimoCard, callback)
+            return
+          }
         }
       }
     }
 
   }
 
-  // console.log('  proximoSlot:', proximoSlot, '   ultimoSlotValidado:', ultimoSlotValidado)
-
-  // os ultimos slots preenchidos estão validados, agora precisa elicitar o proximo Slot
-  if (proximoSlot !== '' && ultimoSlotValidado !== '' && ultimoSlotValidado !== 'sku') {
-
-    var card, ultimoCard;
-
-    try {
-      switch (proximoSlot) {
-        case 'categoria':
-          break;
-        case 'produto':
-          produtosAPI = await getProdutosAPI(slots.categoria, categoriasAPI);
-          card = gerarCard.produtos(produtosAPI);
-          ultimoCard = gerarCard.categorias(categoriasAPI);
-          break;
-        case 'sku':
-          skusAPI = getSKUsAPI(slots.produto, produtosAPI);
-          card = gerarCard.SKUs(skusAPI);
-          ultimoCard = gerarCard.produtos(produtosAPI);
-          break;
-        default:
-          break;
-      }
-
-      callback({
-        sessionAttributes: intentRequest.sessionAttributes,
-        dialogAction: {
-          type: 'ElicitSlot',
-          intentName: intentRequest.currentIntent.name,
-          slots,
-          slotToElicit: proximoSlot,
-          responseCard: card
-        }
-      })
-
-      console.log(' proximo slotttt:', proximoSlot)
-
-      return
-
+  if (intentRequest.currentIntent.confirmationStatus === 'None' ) {
+    const message = {
+      contentType: "CustomPayload",
+      content: `\{"message": "Adicione ao carrinho e digite ok para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho"\}]\}\}`
     }
-    catch (msgErro) {
-      console.log('puts deu ruim!!!!!!!!!!')
-      // se cair nesse catch, é pq deu um erro pra pegar o card. Ex: não tem o estoque do item selecionado
-      slots[ultimoSlotValidado] = null;
-      callback({
-        sessionAttributes: intentRequest.sessionAttributes,
-        dialogAction: {
-          type: 'ElicitSlot',
-          intentName: intentRequest.currentIntent.name,
-          slots,
-          slotToElicit: ultimoSlotValidado,
-          message: {
-            contentType: 'PlainText',
-            content: msgErro.message
-          },
-          responseCard: ultimoCard
-        }
-      })
-      return
-    }
-
-  }
-
-  if (intentRequest.currentIntent.confirmationStatus === 'None' ){
-    callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'ConfirmIntent',
-        slots,
-        intentName: intentRequest.currentIntent.name,
-        // message: {
-        //   contentType: "PlainText",
-        //   content: "Gostaria de adicionar ao carrinho?"
-        // }
-        message: {
-          contentType: "CustomPayload",
-          content: `\{"message": "Adicione ao carrinho e digite "ok" para continuar.,\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.sku}",\n "name":"Adicionar ao carrinho"\}]\}\}`
-        }
-      }
-    })
+    lexResponse.confirmIntent(intentRequest.sessionAttributes, intentName, slots, message, undefined, callback)
     return;
   }
+
   else if (intentRequest.currentIntent.confirmationStatus === 'Confirmed' || intentRequest.currentIntent.confirmationStatus === 'Denied' ){
-    callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'ElicitSlot',
-        intentName: intentRequest.currentIntent.name,
-        slots,
-        slotToElicit: 'repetirOuAvaliar',
-        message: {
-          contentType: 'PlainText',
-          content: 'Obrigado! Deseja receber mais sugestões ou avaliar o atendimento?'
-        },
-        responseCard: {
-          version: 1,
-          contentType: "application/vnd.amazonaws.card.generic",
-          genericAttachments: [
-            {
-              buttons: [
-                {
-                  text: 'Repetir',
-                  value: 'Repetir'
-                },
-                {
-                  text: 'Avaliar',
-                  value: 'Avaliar'
-                }
-              ]
-            }
-          ]
-        }
-      }
-    })
+    const message = {
+      contentType: 'PlainText',
+      content: 'Obrigado! Deseja receber mais sugestões ou avaliar o atendimento?'
+    }
+    const responseCard = repetirOuAvaliar()
+    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', message, responseCard, callback)
     return
     
   }
 
-  callback({
-      sessionAttributes: intentRequest.sessionAttributes,
-      dialogAction: {
-        type: 'Delegate',
-        slots
-      }
-    })
-
+  lexResponse.delegate(intentRequest.sessionAttributes, slots)
   return
 }
 
