@@ -28,6 +28,13 @@ function validarSlots(slots) {
 
   // VALIDAR SLOT PRODUTO
   if (produtosAPI !== undefined && produto !== null) {
+    if (produto.toLowerCase().indexOf('voltar') !== -1 ) {
+      return {
+        seValido: true,
+        voltar: true,
+        slotVoltar: 'categoria'
+      }
+    }
     const nomesProdutos = produtosAPI.map(produto => produto.nome)
     if (!nomesProdutos.includes(produto.toLowerCase())) {
       return {
@@ -39,6 +46,13 @@ function validarSlots(slots) {
 
   // VALIDAR SLOT SKU
   if (skusAPI !== undefined && sku !== null) {
+    if (sku.toLowerCase().indexOf('não') !== -1 || sku.toLowerCase().indexOf('nao') !== -1) {
+      return {
+        seValido: true,
+        voltar: true,
+        slotVoltar: 'produto'
+      }
+    }
     const nomesSKUs = skusAPI.map(sku => sku.nome)
     if (!nomesSKUs.includes(sku.toLowerCase())) {
       return {
@@ -51,7 +65,8 @@ function validarSlots(slots) {
 
   // TODAS SLOTS NÃO NULAS SÃO VÁLIDOS
   return {
-    seValido: true
+    seValido: true,
+    voltar: false
   }
   
 }
@@ -139,11 +154,12 @@ async function dispatch(intentRequest, callback) {
   if (slots.categoria !== null) {
 
     const resultadoValidacao = validarSlots(slots);
+    console.log('result validacao: ', resultadoValidacao)
 
     // SE ALGUM SLOT INFORMADO PELO USUÁRIO FOI INVALIDADO
     if (!resultadoValidacao.seValido) {
+      console.log('invalido', resultadoValidacao.slotViolado)
 
-      
       slots[resultadoValidacao.slotViolado] = null;
       
       var cardRepeticao;
@@ -155,12 +171,13 @@ async function dispatch(intentRequest, callback) {
         case 'produto':
           cardRepeticao = gerarCard.produtos(produtosAPI);
           break;
-          case 'sku':
-            cardRepeticao = gerarCard.SKUs(skusAPI).card;
-            break;
-          default:
-            break;
-        }
+        case 'sku':
+          cardRepeticao = gerarCard.SKUs(skusAPI);
+          break;
+        default:
+          break;
+      }
+      console.log(' invalidooo', resultadoValidacao.slotViolado, cardRepeticao)
             
       let message = {
         contentType: 'PlainText',
@@ -168,6 +185,34 @@ async function dispatch(intentRequest, callback) {
       }
       lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, resultadoValidacao.slotViolado, message, cardRepeticao, callback)
       return
+    }
+
+    // SE SLOT PRODUTO = VOLTAR , OU SLOT SKU = NÃO
+    else if(resultadoValidacao.seValido && resultadoValidacao.voltar) {
+      console.log('voltar', resultadoValidacao.slotVoltar)
+
+      switch(resultadoValidacao.slotVoltar) {
+        case 'categoria':
+          slots.categoria = null;
+          slots.produto = null;
+          cardRepeticao = gerarCard.categorias(categoriasAPI);
+          break;
+        case 'produto':
+          slots.produto = null;
+          slots.sku = null;
+          cardRepeticao = gerarCard.produtos(produtosAPI);
+          break;
+        default:
+          break;
+      }
+
+        let message = {
+          contentType: 'PlainText',
+          content: `Tudo bem, você deseja mudar de ${resultadoValidacao.slotVoltar}. Temos as opções a seguir:`
+        }
+        lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, resultadoValidacao.slotVoltar, message, cardRepeticao, callback)
+        return
+
     }
 
     // SE TODOS SLOTS INFORMADOS (NÃO NULOS) FORAM VALIDADOS
@@ -252,12 +297,8 @@ async function dispatch(intentRequest, callback) {
   // SE O BOTÃO JÁ FOI ENVIADO, O LEX DEVE PERGUNTAR SE DESEJA:
   // RECEBER MAIS SUGESTÕES, OU AVALIAR O ATENDIMENTO
   else if (intentRequest.currentIntent.confirmationStatus !== 'None' && slots.repetirOuAvaliar === null){
-    const message = {
-      contentType: 'PlainText',
-      content: 'Obrigado! Deseja receber mais sugestões ou avaliar o atendimento?'
-    }
     const responseCard = gerarCard.repetirOuAvaliar()
-    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', message, responseCard, callback)
+    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', undefined, responseCard, callback)
     return
     
   }
