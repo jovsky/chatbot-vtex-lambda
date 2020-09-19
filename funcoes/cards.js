@@ -1,12 +1,12 @@
-const { toTitleCase, replaceChar } = require('../util/util')
+const { replaceChar } = require('../util/util')
 
+// MONTAR CARD PARA PREENCHER SLOT CATEGORIA COM DADOS DA API 
 module.exports.categorias = function(categoriasAPI) {
 
-  // console.log(' Categorias da API:', categoriasAPI)
-  const botoesCategorias = categoriasAPI.map((categoria) => {
-    // console.log(' ... '+categoria.nome)
+  const botoesCategorias = categoriasAPI.map( (categoria) => {
     return {
-      text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
+      // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
+      text: categoria.nome.toUpperCase(),
       value: categoria.nome
     }
   })
@@ -16,20 +16,20 @@ module.exports.categorias = function(categoriasAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Categorias',
+        title: 'Categorias'.toUpperCase(),
         buttons: botoesCategorias
       }
     ]
   }
 }
 
+// MONTAR CARD PARA PREENCHER SLOT PRODUTO COM DADOS DA API 
 module.exports.produtos = function (produtosAPI) {
 
-  // console.log('aaaaaa', produtosAPI)
   const botoesProdutos = produtosAPI.map((produto) => {
-    // console.log(' ... '+produto.nome)
     return {
-      text: replaceChar(produto.nome.toUpperCase(), "_", " "),
+      // text: replaceChar(produto.nome.toUpperCase(), "_", " "),
+      text: produto.nome.toUpperCase(),
       value: produto.nome
     }
   })
@@ -39,18 +39,20 @@ module.exports.produtos = function (produtosAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Produtos da categoria',
+        title: 'Produtos da categoria'.toUpperCase(),
         buttons: botoesProdutos
       }
     ]
   }
 }
 
+// ENVIA CARD PARA PREENCHER SLOT SKU COM DADOS DA API 
 module.exports.SKUs = function(skusAPI) {
 
   const slideCards = skusAPI.map((sku) => {
     return {
-      title: replaceChar(sku.nome.toUpperCase(), "_", " "),
+      // title: replaceChar(sku.nome.toUpperCase(), "_", " "),
+      title: sku.nome.toUpperCase(),
       subTitle: `R$ ${sku.preco}`,
       imageUrl: sku.imagem,
       attachmentLinkUrl: sku.linkCarrinho,
@@ -61,7 +63,6 @@ module.exports.SKUs = function(skusAPI) {
     }
   })
 
-
   return {
     version: 1,
     contentType: "application/vnd.amazonaws.card.generic",
@@ -69,21 +70,22 @@ module.exports.SKUs = function(skusAPI) {
   }
 }
 
+// ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
 module.exports.repetirOuAvaliar = function() {
   return {
     version: 1,
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Mais sugestões ou avaliar o atendimento?",
+        title: "Mais sugestões ou avaliar o atendimento?".toUpperCase(),
         buttons: [
           {
             text: 'Mais sugestões',
-            value: 'Mais'
+            value: 'Mais sugestoes'
           },
           {
-            text: 'Avaliar',
-            value: 'Avaliar'
+            text: 'Avaliar atendimento',
+            value: 'Avaliar atendimento'
           }
         ]
       }

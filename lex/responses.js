@@ -1,3 +1,4 @@
+// DIALOG ACTION PARA O LEX: ELICIT SLOT
 module.exports.elicitSlot = function(sessionAttributes, intentName, slots, slotToElicit, message=undefined, responseCard=undefined, callback) {
   return callback({
     sessionAttributes,
@@ -12,6 +13,7 @@ module.exports.elicitSlot = function(sessionAttributes, intentName, slots, slotT
   })
 }
 
+// DIALOG ACTION PARA O LEX: DELEGATE
 module.exports.delegate = function(sessionAttributes, slots, callback) {
   return callback({
     sessionAttributes,
@@ -22,6 +24,7 @@ module.exports.delegate = function(sessionAttributes, slots, callback) {
   })
 }
 
+// DIALOG ACTION PARA O LEX: CONFIRM INTENT
 module.exports.confirmIntent = function(sessionAttributes, intentName, slots, message=undefined, responseCard=undefined, callback) {
   return callback({
     sessionAttributes,
@@ -29,6 +32,18 @@ module.exports.confirmIntent = function(sessionAttributes, intentName, slots, me
       type: 'ConfirmIntent',
       intentName,
       slots,
+      message,
+      responseCard
+    }
+  })
+}
+
+// DIALOG ACTION PARA O LEX: ELICIT INTENT
+module.exports.elicitIntent = function(sessionAttributes, message=undefined, responseCard=undefined, callback) {
+  return callback({
+    sessionAttributes,
+    dialogAction: {
+      type: 'ElicitIntent',
       message,
       responseCard
     }

@@ -1,6 +1,7 @@
 const axios = require('axios');
 const { replaceChar } = require('../util/util')
 
+// PARAMETROS DE ACESSO À API
 const api = axios.create({
   baseURL: "https://hiringcoders14.myvtex.com/api/",
   method: "GET",
@@ -12,23 +13,26 @@ const api = axios.create({
   }
 });
 
+// PEGAR O ID DA CATEOGIRA SELECIONADA A PARTIR DOS DADOS DA API
 function getIdCategoria(nomeCategoria, categoriasAPI) {
   const result = categoriasAPI.filter((cat) => cat.nome === nomeCategoria);
   return result[0].id;
 }
 
+// PEGAR O ID DO PRODUTO SELECIONADO A PARTIR DOS DADOS DA API
 function getIdProduto(nomeProduto, produtosAPI) {
   const result = produtosAPI.filter((prod) => prod.nome === nomeProduto);
   return result[0].id;
 }
 
+// PEGAR OS SKUS DO PRODUTO SELECIONADO A PARTIR DOS DADOS DA API
 function getSKUProduto(idProduto, produtosAPI) {
   const result = produtosAPI.filter((prod) => prod.id === idProduto);
-  // console.log(' Get SKU produto:', idProduto, result)
   return result[0].skus;
 }
 
-module.exports.getCategoriasAPI = async () => {
+// RECEBE DA API OS DADOS DE CATEGORIAS EXISTENTES
+module.exports.getCategorias = async () => {
   const url = 'catalog_system/pub/category/tree/1'
 
   const response = await api.get(url)
@@ -36,7 +40,8 @@ module.exports.getCategoriasAPI = async () => {
 
   const result = data.map(result => {
     return {
-      nome: replaceChar(result.name.toLowerCase(), " ", "_"),
+      // nome: replaceChar(result.name.toLowerCase(), " ", "_"),
+      nome: result.name.toLowerCase(),
       id: result.id
     }
   })
@@ -44,12 +49,12 @@ module.exports.getCategoriasAPI = async () => {
   return result
 }
 
-module.exports.getProdutosAPI = async (categoria, categoriasAPI) => {
+// RECEBE DA API OS DADOS DE PRODUTOS EXISTENTES DE UMA CATEGORIA
+module.exports.getProdutos = async (categoria, categoriasAPI) => {
 
   const idCategoria = getIdCategoria(categoria, categoriasAPI);
 
   const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
-
   const response = await api.get(url)
   const data = response.data
 
@@ -59,7 +64,8 @@ module.exports.getProdutosAPI = async (categoria, categoriasAPI) => {
 
   const result = data.map(produto => {
     return {
-      nome: replaceChar(produto.productName.toLowerCase()," ", "_"),
+      // nome: replaceChar(produto.productName.toLowerCase()," ", "_"),
+      nome: produto.productName.toLowerCase(),
       id: produto.productId,
       skus: produto.items
     }
@@ -68,34 +74,28 @@ module.exports.getProdutosAPI = async (categoria, categoriasAPI) => {
   return result
 }
 
-module.exports.getSKUsAPI = (produto, produtosAPI) => {
+// RECEBE DA API OS DADOS DE SKUS EXISTENTES DE UM PRODUTO
+module.exports.getSKUs = (produto, produtosAPI) => {
 
   const idProduto = getIdProduto(produto, produtosAPI);
 
-  const skusProduto = getSKUProduto(idProduto, produtosAPI) // []
+  const skusProduto = getSKUProduto(idProduto, produtosAPI);
 
-  // console.log('  --> SKUS:', skusProduto[0].sellers);
-
-  const result = skusProduto.map(sku => {
+  return skusProduto.map(sku => {
     return {
-      nome: replaceChar(sku.name.toLowerCase(), " ", "_"),
+      // nome: replaceChar(sku.name.toLowerCase(), " ", "_"),
+      nome: sku.name.toLowerCase(),
       id: sku.itemId,
-      preco: sku.sellers[0].commertialOffer.Price,
+      preco: (parseFloat(sku.sellers[0].commertialOffer.Price).toFixed(2)).toString(),
       linkCarrinho: sku.sellers[0].addToCartLink,
       imagem: sku.images[0].imageUrl
     }
   })
 
-  // console.log(' Resultttt', result)
-
-  return result
-  
 }
 
-module.exports.getLinkSKUsAPI = (skusAPI, nomeSKU) => {
-
+// PEGAR OS LINKS PARA O CARRINHO DOS SKUS DA API
+module.exports.getLinkSKUs = (skusAPI, nomeSKU) => {
   const [sku] = skusAPI.filter( sku => sku.nome === nomeSKU)
-  console.log('  get link:', nomeSKU, sku.linkCarrinho)
   return sku.linkCarrinho;
-
 }
