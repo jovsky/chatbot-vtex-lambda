@@ -6,7 +6,7 @@ module.exports.categorias = function(categoriasAPI) {
   const botoesCategorias = categoriasAPI.map( (categoria) => {
     return {
       // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
-      text: categoria.nome.toUpperCase(),
+      text: `${categoria.nome.toUpperCase()} 😋`,
       value: categoria.nome
     }
   })
@@ -16,12 +16,14 @@ module.exports.categorias = function(categoriasAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Categorias'.toUpperCase(),
+        title: 'Categorias 😋'.toUpperCase(),
         buttons: botoesCategorias
       }
     ]
   }
 }
+
+
 
 // MONTAR CARD PARA PREENCHER SLOT SUBCATEGORIAS COM DADOS DA API 
 module.exports.subcategorias = function(subcategoriasAPI) {
@@ -116,8 +118,17 @@ module.exports.SKUs = function(skusAPI) {
   }
 }
 
+
+function getIdSKU(nomeSKU, skusAPI) {
+  const result = skusAPI.filter((sku) => sku.nome === nomeSKU);
+  return result[0].id;
+}
+
+
 // ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
-module.exports.repetirOuAvaliar = function() {
+module.exports.repetirOuAvaliar = function(sku, skusAPI) {
+  const skuID = getIdSKU(sku, skusAPI);
+  console.log(' skuID:', skuID);
   return {
     version: 1,
     contentType: "application/vnd.amazonaws.card.generic",
@@ -127,7 +138,7 @@ module.exports.repetirOuAvaliar = function() {
         buttons: [
           {
             text: 'Mais sugestões',
-            value: 'Mais sugestoes'
+            value: `Aceito sugestões relacionadas a ${sku} código ${getIdSKU(sku, skusAPI)}`
           },
           {
             text: 'Avaliar atendimento',

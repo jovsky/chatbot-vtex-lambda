@@ -70,9 +70,7 @@ module.exports.getCategorias = async () => {
 module.exports.getSubcategorias = async (nomeCategoria, categoriasAPI) => {
 
   const idCategoria = getIdCategoria(nomeCategoria, categoriasAPI);
-  console.log('id:', idCategoria)
   const categoria = categoriasAPI.filter( cat => cat.id === idCategoria);
-  console.log('categoria:', categoria)
   return categoria[0].subcategorias;
 
 }

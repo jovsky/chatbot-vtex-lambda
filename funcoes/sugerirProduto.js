@@ -28,7 +28,7 @@ function validarSlots(slots) {
   }
 
   // VALIDAR SLOT SUBCATEGORIA
-  console.log('validate: ', subcategoriasAPI, subcategoria)
+  // console.log('validate: ', subcategoriasAPI, subcategoria)
   if (subcategoriasAPI !== undefined && subcategoria !== null) {
     if (subcategoria.toLowerCase().indexOf('voltar') !== -1 ) {
       return {
@@ -38,7 +38,7 @@ function validarSlots(slots) {
       }
     }
     const nomesSubcategorias = subcategoriasAPI.map(subcat => subcat.nome);
-    console.log("nomes", nomesSubcategorias, !nomesSubcategorias.includes(subcategoria.toLowerCase()))
+    // console.log("nomes", nomesSubcategorias, !nomesSubcategorias.includes(subcategoria.toLowerCase()))
     if (!nomesSubcategorias.includes(subcategoria.toLowerCase())) {
       return {
         seValido: false,
@@ -123,7 +123,7 @@ function validarRepetirOuAvaliar(repetirOuAvaliar) {
 
 // FUNÇÃO DISPATCH QUE IDENTIFICA O ESTADO, FAZ VALIDAÇÕES, E RETORNA UMA AÇÃO PARA O LEX
 async function dispatch(intentRequest, callback) {
-  
+
   var ultimoSlotValidado = '';
   var proximoSlot = '';
   var card;
@@ -144,7 +144,7 @@ async function dispatch(intentRequest, callback) {
         contentType: 'PlainText',
         content: 'Desculpe, não entendemos sua resposta. Queremos saber se gostaria de receber mais sugestão ou se deseja finalizar avaliando nosso atendimento.'
       }
-      const responseCard = gerarCard.repetirOuAvaliar()
+      const responseCard = gerarCard.repetirOuAvaliar(slots.sku, skusAPI)
       lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', message, responseCard, callback)
       return
     }
@@ -214,7 +214,7 @@ async function dispatch(intentRequest, callback) {
 
     // SE SLOT PRODUTO = VOLTAR , OU SLOT SKU = NÃO
     else if(resultadoValidacao.seValido && resultadoValidacao.voltar) {
-      console.log('voltar', resultadoValidacao.slotVoltar)
+      // console.log('voltar', resultadoValidacao.slotVoltar)
 
       switch(resultadoValidacao.slotVoltar) {
         case 'categoria':
@@ -267,15 +267,12 @@ async function dispatch(intentRequest, callback) {
            * ultimoCard: será utilizado no CATCH caso seja necessário repetir a entrada do slot no Lex
            */
           try {
-            console.log('ultimoSlotValidado', ultimoSlotValidado)
+            // console.log('ultimoSlotValidado', ultimoSlotValidado)
             switch (ultimoSlotValidado) {
               case 'categoria':
                 ultimoCard = gerarCard.categorias(categoriasAPI);
-                console.log('xxx 1');
                 subcategoriasAPI = await api.getSubcategorias(slots.categoria, categoriasAPI); // implementar
-                console.log('xxx 2', subcategoriasAPI);
                 card = gerarCard.subcategorias(subcategoriasAPI);
-                console.log('xxx 3');
                 break;
               case 'subcategoria':
                 ultimoCard = gerarCard.subcategorias(subcategoriasAPI); // <----- IMPLEMENTAR
@@ -320,6 +317,7 @@ async function dispatch(intentRequest, callback) {
 
   }
 
+
   // NESTA ALTURA DO CÓDIGO, JÁ FORAM INFORMADOS E VALIDADOS TODOS SLOTS NECESSÁRIOS
   // ANTES DE AVANÇAR PARA ETAPA DE ADICIONAR AO CARRINHO.
 
@@ -336,10 +334,9 @@ async function dispatch(intentRequest, callback) {
   // SE O BOTÃO JÁ FOI ENVIADO, O LEX DEVE PERGUNTAR SE DESEJA:
   // RECEBER MAIS SUGESTÕES, OU AVALIAR O ATENDIMENTO
   else if (intentRequest.currentIntent.confirmationStatus !== 'None' && slots.repetirOuAvaliar === null){
-    const responseCard = gerarCard.repetirOuAvaliar()
+    const responseCard = gerarCard.repetirOuAvaliar(slots.sku, skusAPI)
     lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', undefined, responseCard, callback)
-    return
-    
+    return  
   }
 
   // CASO NÃO TENHA FEITO NENHUM CALLBACK ATÉ AQUI, DEIXAR PARA O LEX DECIDIR A PRÓXIMA AÇÃO
