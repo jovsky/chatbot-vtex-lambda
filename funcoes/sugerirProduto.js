@@ -5,17 +5,18 @@ const lexResponse = require('../lex/responses');
 const gerarCard = require('./cards');
 
 // LISTA ORDENADA DOS NOMES DOS SLOTS, ONDE ESTA ORDEM ESTABELECE O FLUXO DA INTERAÇÃO DO CHATBOT COM O USUÁRIO
-const nomesSlotsOrdenados = ['categoria', 'produto', 'sku', '​linkCarrinho', 'repetirOuAvaliar']
+const nomesSlotsOrdenados = ['categoria', 'subcategoria', 'produto', 'sku', '​linkCarrinho', 'repetirOuAvaliar']
 
 // RESULTADOS DA API
 var categoriasAPI;
+var subcategoriasAPI;
 var produtosAPI;
 var skusAPI;
 
 // FUNÇÃO QUE VALIDA OS SLOTS NÃO NULOS DO AMAZON LEX
 function validarSlots(slots) {
 
-  const { categoria, produto, sku } = slots;
+  const { categoria, subcategoria, produto, sku } = slots;
 
   // VALIDAR SLOT CATEGORIA
   const nomesCategorias = categoriasAPI.map(categoria => categoria.nome)
@@ -26,13 +27,33 @@ function validarSlots(slots) {
     }
   }
 
+  // VALIDAR SLOT SUBCATEGORIA
+  console.log('validate: ', subcategoriasAPI, subcategoria)
+  if (subcategoriasAPI !== undefined && subcategoria !== null) {
+    if (subcategoria.toLowerCase().indexOf('voltar') !== -1 ) {
+      return {
+        seValido: true,
+        voltar: true,
+        slotVoltar: 'categoria'
+      }
+    }
+    const nomesSubcategorias = subcategoriasAPI.map(subcat => subcat.nome);
+    console.log("nomes", nomesSubcategorias, !nomesSubcategorias.includes(subcategoria.toLowerCase()))
+    if (!nomesSubcategorias.includes(subcategoria.toLowerCase())) {
+      return {
+        seValido: false,
+        slotViolado: "subcategoria"
+      }
+    }
+  }
+
   // VALIDAR SLOT PRODUTO
   if (produtosAPI !== undefined && produto !== null) {
     if (produto.toLowerCase().indexOf('voltar') !== -1 ) {
       return {
         seValido: true,
         voltar: true,
-        slotVoltar: 'categoria'
+        slotVoltar: 'subcategoria'
       }
     }
     const nomesProdutos = produtosAPI.map(produto => produto.nome)
@@ -129,7 +150,8 @@ async function dispatch(intentRequest, callback) {
     }
     // SE RESPOSTA FOR VALIDA E IGUAL A REPETIR SUGESTÕES
     else if (resultadoValidacao.seValido && resultadoValidacao.acao === "repetir") {
-      slots.categoria = null; 
+      slots.categoria = null;
+      slots.subcategoria = null; 
       slots.produto = null; 
       slots.sku = null; 
       slots.repetirOuAvaliar = null;
@@ -154,11 +176,11 @@ async function dispatch(intentRequest, callback) {
   if (slots.categoria !== null) {
 
     const resultadoValidacao = validarSlots(slots);
-    console.log('result validacao: ', resultadoValidacao)
+    // console.log('result validacao: ', resultadoValidacao)
 
     // SE ALGUM SLOT INFORMADO PELO USUÁRIO FOI INVALIDADO
     if (!resultadoValidacao.seValido) {
-      console.log('invalido', resultadoValidacao.slotViolado)
+      // console.log('invalido', resultadoValidacao.slotViolado)
 
       slots[resultadoValidacao.slotViolado] = null;
       
@@ -167,6 +189,9 @@ async function dispatch(intentRequest, callback) {
       switch (resultadoValidacao.slotViolado) {
         case 'categoria':
           cardRepeticao = gerarCard.categorias(categoriasAPI);
+          break;
+        case 'subcategoria':
+          cardRepeticao = gerarCard.subcategorias(subcategoriasAPI); //   IMPLEMENTAR <----
           break;
         case 'produto':
           cardRepeticao = gerarCard.produtos(produtosAPI);
@@ -177,7 +202,7 @@ async function dispatch(intentRequest, callback) {
         default:
           break;
       }
-      console.log(' invalidooo', resultadoValidacao.slotViolado, cardRepeticao)
+      // console.log(' invalidooo', resultadoValidacao.slotViolado, cardRepeticao)
             
       let message = {
         contentType: 'PlainText',
@@ -194,8 +219,13 @@ async function dispatch(intentRequest, callback) {
       switch(resultadoValidacao.slotVoltar) {
         case 'categoria':
           slots.categoria = null;
-          slots.produto = null;
+          slots.subcategoria = null;
           cardRepeticao = gerarCard.categorias(categoriasAPI);
+          break;
+        case 'subcategoria':
+          slots.subcategoria = null;
+          slots.produto = null;
+          cardRepeticao = gerarCard.subcategorias(subcategoriasAPI);
           break;
         case 'produto':
           slots.produto = null;
@@ -206,12 +236,12 @@ async function dispatch(intentRequest, callback) {
           break;
       }
 
-        let message = {
-          contentType: 'PlainText',
-          content: `Tudo bem, você deseja mudar de ${resultadoValidacao.slotVoltar}. Temos as opções a seguir:`
-        }
-        lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, resultadoValidacao.slotVoltar, message, cardRepeticao, callback)
-        return
+      let message = {
+        contentType: 'PlainText',
+        content: `Tudo bem, você deseja mudar de ${resultadoValidacao.slotVoltar}. Temos as opções a seguir:`
+      }
+      lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, resultadoValidacao.slotVoltar, message, cardRepeticao, callback)
+      return
 
     }
 
@@ -237,10 +267,19 @@ async function dispatch(intentRequest, callback) {
            * ultimoCard: será utilizado no CATCH caso seja necessário repetir a entrada do slot no Lex
            */
           try {
+            console.log('ultimoSlotValidado', ultimoSlotValidado)
             switch (ultimoSlotValidado) {
               case 'categoria':
                 ultimoCard = gerarCard.categorias(categoriasAPI);
-                produtosAPI = await api.getProdutos(slots.categoria, categoriasAPI);
+                console.log('xxx 1');
+                subcategoriasAPI = await api.getSubcategorias(slots.categoria, categoriasAPI); // implementar
+                console.log('xxx 2', subcategoriasAPI);
+                card = gerarCard.subcategorias(subcategoriasAPI);
+                console.log('xxx 3');
+                break;
+              case 'subcategoria':
+                ultimoCard = gerarCard.subcategorias(subcategoriasAPI); // <----- IMPLEMENTAR
+                produtosAPI = await api.getProdutos(slots.categoria, slots.subcategoria, categoriasAPI, subcategoriasAPI); // <----- IMPLEMENTAR
                 card = gerarCard.produtos(produtosAPI);
                 break;
               case 'produto':

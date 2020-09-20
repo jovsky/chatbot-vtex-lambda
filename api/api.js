@@ -13,9 +13,15 @@ const api = axios.create({
   }
 });
 
-// PEGAR O ID DA CATEOGIRA SELECIONADA A PARTIR DOS DADOS DA API
+// PEGAR O ID DA CATEGORIA SELECIONADA A PARTIR DOS DADOS DA API
 function getIdCategoria(nomeCategoria, categoriasAPI) {
   const result = categoriasAPI.filter((cat) => cat.nome === nomeCategoria);
+  return result[0].id;
+}
+
+// PEGAR O ID DA CATEGORIA SELECIONADA A PARTIR DOS DADOS DA API
+function getIdSubcategoria(nomeSubcategoria, subcategoriasAPI) {
+  const result = subcategoriasAPI.filter((subcat) => subcat.nome === nomeSubcategoria);
   return result[0].id;
 }
 
@@ -26,10 +32,15 @@ function getIdProduto(nomeProduto, produtosAPI) {
 }
 
 // PEGAR OS SKUS DO PRODUTO SELECIONADO A PARTIR DOS DADOS DA API
-function getSKUProduto(idProduto, produtosAPI) {
+function getSKUsDoProduto(idProduto, produtosAPI) {
   const result = produtosAPI.filter((prod) => prod.id === idProduto);
   return result[0].skus;
 }
+
+// function getSubcategoriasDaCategoria(idCategoria, categoriasAPI) {
+//   const result = categoriasAPI.filter((cat) => cat.id === idCategoria);
+//   return result[0].skus;
+// }
 
 // RECEBE DA API OS DADOS DE CATEGORIAS EXISTENTES
 module.exports.getCategorias = async () => {
@@ -42,24 +53,42 @@ module.exports.getCategorias = async () => {
     return {
       // nome: replaceChar(result.name.toLowerCase(), " ", "_"),
       nome: result.name.toLowerCase(),
-      id: result.id
+      id: result.id,
+      subcategorias: result.children.map( (child) => {
+        return {
+          id: child.id,
+          nome: child.name.toLowerCase()
+        }
+      })
     }
   })
 
   return result
 }
 
+// RECEBE DA API OS DADOS DE SUBCATEGORIAS EXISTENTES
+module.exports.getSubcategorias = async (nomeCategoria, categoriasAPI) => {
+
+  const idCategoria = getIdCategoria(nomeCategoria, categoriasAPI);
+  console.log('id:', idCategoria)
+  const categoria = categoriasAPI.filter( cat => cat.id === idCategoria);
+  console.log('categoria:', categoria)
+  return categoria[0].subcategorias;
+
+}
+
 // RECEBE DA API OS DADOS DE PRODUTOS EXISTENTES DE UMA CATEGORIA
-module.exports.getProdutos = async (categoria, categoriasAPI) => {
+module.exports.getProdutos = async (categoria, subcategoria, categoriasAPI, subcategoriasAPI) => {
 
   const idCategoria = getIdCategoria(categoria, categoriasAPI);
+  const idSubcategoria = getIdSubcategoria(subcategoria, subcategoriasAPI);
 
-  const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/`
+  const url = `catalog_system/pub/products/search?fq=C:/${idCategoria}/${idSubcategoria}/`
   const response = await api.get(url)
   const data = response.data
 
   if (data.length === 0 || data === null) {
-    throw new Error(`Lamento, estamos sem estoque de ${categoria}. Faça outra escolha.`);
+    throw new Error(`Lamento, estamos sem estoque deste tipo de produto. Faça outra escolha.`);
   }
 
   const result = data.map(produto => {
@@ -79,7 +108,7 @@ module.exports.getSKUs = (produto, produtosAPI) => {
 
   const idProduto = getIdProduto(produto, produtosAPI);
 
-  const skusProduto = getSKUProduto(idProduto, produtosAPI);
+  const skusProduto = getSKUsDoProduto(idProduto, produtosAPI);
 
   return skusProduto.map(sku => {
     return {

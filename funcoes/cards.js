@@ -23,6 +23,52 @@ module.exports.categorias = function(categoriasAPI) {
   }
 }
 
+// MONTAR CARD PARA PREENCHER SLOT SUBCATEGORIAS COM DADOS DA API 
+module.exports.subcategorias = function(subcategoriasAPI) {
+
+  const botoesCategorias = subcategoriasAPI.map( (subcategoria) => {
+    return {
+      // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
+      text: subcategoria.nome.toUpperCase(),
+      value: subcategoria.nome
+    }
+  })
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: 'Categorias'.toUpperCase(),
+        buttons: botoesCategorias
+      }
+    ]
+  }
+}
+
+// MONTAR CARD PARA PREENCHER SLOT SUBCATEGORIAS COM DADOS DA API 
+module.exports.subcategorias = function(subcategoriasAPI) {
+
+  const botoesSubcategorias = subcategoriasAPI.map( (subcategoria) => {
+    return {
+      // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
+      text: subcategoria.nome.toUpperCase(),
+      value: subcategoria.nome
+    }
+  })
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: 'Subcategorias'.toUpperCase(),
+        buttons: botoesSubcategorias
+      }
+    ]
+  }
+}
+
 // MONTAR CARD PARA PREENCHER SLOT PRODUTO COM DADOS DA API 
 module.exports.produtos = function (produtosAPI) {
 
