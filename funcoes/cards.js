@@ -125,6 +125,31 @@ function getIdSKU(nomeSKU, skusAPI) {
 }
 
 
+
+// ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
+module.exports.verFrete = function() {
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: "Quer ver sobre o frete?".toUpperCase(),
+        buttons: [
+          {
+            text: 'Sim',
+            value: `sim`
+          },
+          {
+            text: 'Não',
+            value: 'nao'
+          }
+        ]
+      }
+    ]
+  }
+}
+
 // ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
 module.exports.repetirOuAvaliar = function(sku, skusAPI) {
   const skuID = getIdSKU(sku, skusAPI);
