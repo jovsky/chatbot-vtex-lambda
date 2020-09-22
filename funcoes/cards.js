@@ -6,7 +6,7 @@ module.exports.categorias = function(categoriasAPI) {
   const botoesCategorias = categoriasAPI.map( (categoria) => {
     return {
       // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
-      text: `${categoria.nome.toUpperCase()} 😋`,
+      text: `${categoria.nome.toUpperCase()} ${categoria.emojis}`,
       value: categoria.nome
     }
   })
@@ -16,7 +16,7 @@ module.exports.categorias = function(categoriasAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Categorias 😋'.toUpperCase(),
+        title: 'Categorias'.toUpperCase(),
         buttons: botoesCategorias
       }
     ]

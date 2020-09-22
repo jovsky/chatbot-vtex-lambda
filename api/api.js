@@ -46,6 +46,14 @@ function getSKUsDoProduto(idProduto, produtosAPI) {
 module.exports.getCategorias = async () => {
   const url = 'catalog_system/pub/category/tree/1'
 
+  const emojis = {
+    blusas:'👕',
+    calças:'👖',
+    casacos: '🧥',
+    sapatos: '👟',
+    chapéus: '👒'
+  }
+
   const response = await api.get(url)
   const data = response.data
 
@@ -54,10 +62,11 @@ module.exports.getCategorias = async () => {
       // nome: replaceChar(result.name.toLowerCase(), " ", "_"),
       nome: result.name.toLowerCase(),
       id: result.id,
+      emojis: emojis[result.name],
       subcategorias: result.children.map( (child) => {
         return {
           id: child.id,
-          nome: child.name.toLowerCase()
+          nome: child.name.toLowerCase(),
         }
       })
     }
