@@ -126,7 +126,7 @@ function getIdSKU(nomeSKU, skusAPI) {
 
 
 
-// ENVIA CARD PARA SABER SE QUER VER FRETE
+// ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
 module.exports.verFrete = function() {
 
   return {
@@ -134,7 +134,7 @@ module.exports.verFrete = function() {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Quer ver sobre o frete?".toUpperCase(),
+        title: "Qual sua escolha?".toUpperCase(),
         buttons: [
           {
             text: 'Sim',
@@ -150,22 +150,20 @@ module.exports.verFrete = function() {
   }
 }
 
-// ENVIA CARD PARA SABER SE QUER MAIS AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
-module.exports.repetirOuAvaliar = function(produto, produtosAPI) {
-
-  const produtoID = getIdSKU(produto, produtosAPI);
-  console.log(' produtoID:', produtoID);
-
+// ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
+module.exports.repetirOuAvaliar = function(sku, skusAPI) {
+  const skuID = getIdSKU(sku, skusAPI);
+  console.log(' skuID:', skuID);
   return {
     version: 1,
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Temos ".toUpperCase(),
+        title: "Qual sua escolha?".toUpperCase(),
         buttons: [
           {
             text: 'Mais sugestões',
-            value: `Aceito sugestões relacionadas a ${produtoID} código ${produtoID}`
+            value: `Mais sugestões`
           },
           {
             text: 'Avaliar atendimento',
@@ -174,30 +172,5 @@ module.exports.repetirOuAvaliar = function(produto, produtosAPI) {
         ]
       }
     ]
-  }
-}
-
-// ENVIA CARD PARA PREENCHER SLOT SKU COM DADOS DA API 
-module.exports.SKUsRelacionados = function(skusAPI) {
-
-  const slideCards = skusAPI.map((sku) => {
-    
-    return {
-      title: sku.nome.toUpperCase(),
-      subTitle: `R$ ${sku.preco}`,
-      imageUrl: sku.imagem,
-      attachmentLinkUrl: sku.linkCarrinho,
-      buttons: [{
-        text: 'Gostei',
-        value: sku.nome
-      }]
-    }
-
-  })
-
-  return {
-    version: 1,
-    contentType: "application/vnd.amazonaws.card.generic",
-    genericAttachments: slideCards
   }
 }

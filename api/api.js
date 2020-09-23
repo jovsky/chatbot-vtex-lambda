@@ -160,32 +160,3 @@ module.exports.getFrete = async (skuNome, skusAPI, CEP) => {
   return { price, transitTime }
 
 }
-
-// RECEBE DA API OS DADOS DE SKUS EXISTENTES DE UM PRODUTO
-module.exports.getSKUsRelacionados = async (idProduto) => {
-
-  const url = `catalog_system/pub/products/crossselling/whosawalsosaw/${idProduto}/`;
-  const response = await api.get(url)
-  const data = response.data;
-
-  let lista = [];
-  
-  data.map(produto => {
-
-    produto.items.map( sku => {
-
-      lista.push({
-        nome: sku.name.toLowerCase(),
-        id: sku.itemId,
-        preco: (parseFloat(sku.sellers[0].commertialOffer.Price).toFixed(2)).toString(),
-        linkCarrinho: sku.sellers[0].addToCartLink,
-        imagem: sku.images[0].imageUrl
-      })
-      return;
-
-    })
-    return;
-  })
-
-  return lista;
-}

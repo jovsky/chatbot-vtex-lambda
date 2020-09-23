@@ -28,7 +28,6 @@ function validarSlots(slots) {
   }
 
   // VALIDAR SLOT SUBCATEGORIA
-  // console.log('validate: ', subcategoriasAPI, subcategoria)
   if (subcategoriasAPI !== undefined && subcategoria !== null) {
     if (subcategoria.toLowerCase().indexOf('voltar') !== -1 ) {
       return {
@@ -38,7 +37,6 @@ function validarSlots(slots) {
       }
     }
     const nomesSubcategorias = subcategoriasAPI.map(subcat => subcat.nome);
-    // console.log("nomes", nomesSubcategorias, !nomesSubcategorias.includes(subcategoria.toLowerCase()))
     if (!nomesSubcategorias.includes(subcategoria.toLowerCase())) {
       return {
         seValido: false,
@@ -96,24 +94,20 @@ function validarSlots(slots) {
 function validarVerFrete(verFrete) {
 
   const resposta = verFrete.toLowerCase();
-  console.log('validade frete', resposta)
 
   if(resposta.indexOf('sim') !== -1 || resposta.indexOf('quero') !== -1) {
-    console.log(' 11')
     return {
       seValido: true,
       querVer: true
     }
   }
   else if (resposta.indexOf('não') !== -1 || resposta.indexOf('nao') !== -1) {
-    console.log(' 22')
     return {
       seValido: true,
       querVer: false
     }
   }
   else {
-    console.log(' 3')
     return {
       seValido: false
     }
@@ -182,7 +176,6 @@ async function dispatch(intentRequest, callback) {
   var ultimoCard;
   
   const slots = intentRequest.currentIntent.slots;
-  console.log(' DISPATCH SLOTS', slots)
 
   // SE USUARIO RESPONDEU SE DESEJA REPETIR OU AVALIAR
   if(slots.repetirOuAvaliar !== null) {
@@ -209,6 +202,8 @@ async function dispatch(intentRequest, callback) {
       slots.sku = null; 
       slots.repetirOuAvaliar = null;
       slots.linkCarrinho = null;
+      slots.verFrete = null;
+      slots.CEP = null;
     }
   }
 
@@ -224,16 +219,13 @@ async function dispatch(intentRequest, callback) {
     lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'categoria', undefined, gerarCard.categorias(categoriasAPI), callback)
     return
   }
-  console.log(' ...a')
   // SE CATEGORIA JÁ FOI INFORMADA PELO USUÁRIO, ESTANDO VÁLIDA OU NÃO
   if (slots.categoria !== null) {
 
     const resultadoValidacao = validarSlots(slots);
-    // console.log('result validacao: ', resultadoValidacao)
 
     // SE ALGUM SLOT INFORMADO PELO USUÁRIO FOI INVALIDADO
     if (!resultadoValidacao.seValido) {
-      // console.log('invalido', resultadoValidacao.slotViolado)
 
       slots[resultadoValidacao.slotViolado] = null;
       
@@ -255,7 +247,6 @@ async function dispatch(intentRequest, callback) {
         default:
           break;
       }
-      // console.log(' invalidooo', resultadoValidacao.slotViolado, cardRepeticao)
             
       let message = {
         contentType: 'PlainText',
@@ -267,7 +258,6 @@ async function dispatch(intentRequest, callback) {
 
     // SE SLOT PRODUTO = VOLTAR , OU SLOT SKU = NÃO
     else if(resultadoValidacao.seValido && resultadoValidacao.voltar) {
-      // console.log('voltar', resultadoValidacao.slotVoltar)
 
       switch(resultadoValidacao.slotVoltar) {
         case 'categoria':
@@ -300,7 +290,6 @@ async function dispatch(intentRequest, callback) {
 
     // SE TODOS SLOTS INFORMADOS (NÃO NULOS) FORAM VALIDADOS
     else {
-      console.log(' ...a.a')
       // IDENFITICAR O ÚLTIMO SLOT VALIDO PARA SABER QUAL A PRÓXIMA AÇÃO
       for (let i = 0; i < nomesSlotsOrdenados.length - 1; i++) {
 
@@ -320,7 +309,6 @@ async function dispatch(intentRequest, callback) {
            * ultimoCard: será utilizado no CATCH caso seja necessário repetir a entrada do slot no Lex
            */
           try {
-            // console.log('ultimoSlotValidado', ultimoSlotValidado)
             switch (ultimoSlotValidado) {
               case 'categoria':
                 ultimoCard = gerarCard.categorias(categoriasAPI);
@@ -370,33 +358,22 @@ async function dispatch(intentRequest, callback) {
     }
 
   }
-  console.log(' ...b')
-
 
   // NESTA ALTURA DO CÓDIGO, JÁ FORAM INFORMADOS E VALIDADOS TODOS SLOTS NECESSÁRIOS
   // ANTES DE AVANÇAR PARA ETAPA DE VER FRETE.
 
-  console.log('chegou aquiiii', slots.verFrete, slots.CEP)
   if (slots.verFrete === null) {
-    console.log('entrou 0')
     const responseCard = gerarCard.verFrete();
-    const message = {
-      contentType: 'PlainText',
-      content: 'Quer ver o frete????'
-    }
-    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'verFrete', message, responseCard, callback);
+    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'verFrete', undefined, responseCard, callback);
     return;
   }
 
   else if(slots.verFrete !== null && slots.CEP === null) {
-    console.log('entrou 1')
 
     const resultadoValidacao = validarVerFrete(slots.verFrete);
-    // console.log('voltar', resultadoValidacao.slotVoltar)
 
     // RESPOSTA INVALIDA, PERGUNTA DE NOVO
     if(!resultadoValidacao.seValido) {
-      console.log('resp invalida')
       slots.verFrete = null;
       const message = {
         contentType: 'PlainText',
@@ -408,7 +385,6 @@ async function dispatch(intentRequest, callback) {
     }
     // SE RESPOSTA FOR VALIDA E IGUAL A NÃO QUER VER
     else if (resultadoValidacao.seValido && resultadoValidacao.querVer) {
-      console.log('valido e quer ver')
       const linkConsulteCEP = "http://www.buscacep.correios.com.br/sistemas/buscacep/";
       slots.verFrete = "sim";
       const message = {
@@ -420,13 +396,11 @@ async function dispatch(intentRequest, callback) {
     }
     // SE RESPOSTA FOR VALIDA E IGUAL A SIM, QUER VER
     else if (resultadoValidacao.seValido && !resultadoValidacao.querVer) {
-      console.log('valido e NAO quer ver')
       slots.verFrete = "nao";
       slots.CEP = "nao";
     }
   }
   else if (slots.verFrete === "sim" && slots.CEP !== null && slots.CEP !== "nao") {
-    console.log('entrou 2')
     
     const resultadoValidacao = validarCEP(slots.CEP);
 
@@ -462,7 +436,7 @@ async function dispatch(intentRequest, callback) {
       const { price, transitTime } = await api.getFrete(slots.sku, skusAPI, slots.CEP);
       const preco = (parseFloat(price)/100).toFixed(2);
       const tempo = transitTime.slice(0, -2);
-      infoFrete = `O valor do frete para sua localidade fica em R$ ${preco} e o prazo estimado é de ${tempo} dias.`;
+      infoFrete = `O valor do frete para sua localidade fica em R$ ${preco} e o prazo estimado é de ${tempo} dias. `;
     }
 
     const message = {
