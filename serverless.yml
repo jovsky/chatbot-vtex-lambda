@@ -11,5 +11,3 @@ provider:
 functions:
   sugerirProduto:
     handler: handler.sugerirProduto
-  sugerirRelacionados:
-    handler: handler.sugerirRelacionados
