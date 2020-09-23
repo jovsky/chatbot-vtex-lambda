@@ -3,10 +3,18 @@ const { replaceChar } = require('../util/util')
 // MONTAR CARD PARA PREENCHER SLOT CATEGORIA COM DADOS DA API 
 module.exports.categorias = function(categoriasAPI) {
 
+  const emojis = {
+    blusas:'👕',
+    calças:'👖',
+    casacos: '🧥',
+    sapatos: '👟',
+    chapeus: '👒'
+  }
+
   const botoesCategorias = categoriasAPI.map( (categoria) => {
     return {
       // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
-      text: `${categoria.nome.toUpperCase()} 😋`,
+      text: `${categoria.nome.toUpperCase()} ${emojis[categoria.nome]}`,
       value: categoria.nome
     }
   })
@@ -16,7 +24,7 @@ module.exports.categorias = function(categoriasAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Categorias 😋'.toUpperCase(),
+        title: 'Categorias'.toUpperCase(),
         buttons: botoesCategorias
       }
     ]
@@ -51,10 +59,15 @@ module.exports.subcategorias = function(subcategoriasAPI) {
 // MONTAR CARD PARA PREENCHER SLOT SUBCATEGORIAS COM DADOS DA API 
 module.exports.subcategorias = function(subcategoriasAPI) {
 
+  const emojis ={
+    feminino: '🚺',
+    masculino: '🚹'
+  }
+
   const botoesSubcategorias = subcategoriasAPI.map( (subcategoria) => {
     return {
       // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
-      text: subcategoria.nome.toUpperCase(),
+      text: `${subcategoria.nome.toUpperCase()} ${emojis[subcategoria.nome]}`,
       value: subcategoria.nome
     }
   })
