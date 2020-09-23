@@ -49,3 +49,16 @@ module.exports.elicitIntent = function(sessionAttributes, message=undefined, res
     }
   })
 }
+
+// DIALOG ACTION PARA O LEX: CLOSE
+module.exports.close = function(sessionAttributes, fulfillmentState, message=undefined, responseCard=undefined, callback) {
+  return callback({
+    sessionAttributes,
+    dialogAction: {
+      type: 'Close',
+      fulfillmentState,
+      message,
+      responseCard
+    }
+  })
+}

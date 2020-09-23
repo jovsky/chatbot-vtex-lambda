@@ -11,3 +11,5 @@ provider:
 functions:
   sugerirProduto:
     handler: handler.sugerirProduto
+  avaliarAtendimento:
+    handler: handler.avaliarAtendimento

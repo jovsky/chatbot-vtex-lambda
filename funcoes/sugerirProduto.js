@@ -436,12 +436,12 @@ async function dispatch(intentRequest, callback) {
       const { price, transitTime } = await api.getFrete(slots.sku, skusAPI, slots.CEP);
       const preco = (parseFloat(price)/100).toFixed(2);
       const tempo = transitTime.slice(0, -2);
-      infoFrete = `O valor do frete para sua localidade fica em R$ ${preco} e o prazo estimado é de ${tempo} dias. `;
+      infoFrete = `O valor do frete para sua localidade fica em R$ ${preco} e o prazo de entrega estimado é de ${tempo} dias. `;
     }
 
     const message = {
       contentType: "CustomPayload",
-      content: `\{"message": "${infoFrete}Adicione ao carrinho e/ou digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho"\}]\}\}`
+      content: `\{"message": "${infoFrete}Adicione ao carrinho e/ou digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho",\n "openLinkInNewTab": false\}]\}\}`
     }
 
     lexResponse.confirmIntent(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, message, undefined, callback)

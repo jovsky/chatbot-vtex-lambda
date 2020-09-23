@@ -134,14 +134,14 @@ module.exports.verFrete = function() {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Qual sua escolha?".toUpperCase(),
+        title: "Quer saber sobre o frete?".toUpperCase(),
         buttons: [
           {
-            text: 'Sim',
+            text: 'Sim, quero ver o frete',
             value: `sim`
           },
           {
-            text: 'Não',
+            text: 'Não, obrigado',
             value: 'nao'
           }
         ]
