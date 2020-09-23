@@ -125,6 +125,31 @@ function getIdSKU(nomeSKU, skusAPI) {
 }
 
 
+
+// ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
+module.exports.verFrete = function() {
+
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: [
+      {
+        title: "Qual sua escolha?".toUpperCase(),
+        buttons: [
+          {
+            text: 'Sim',
+            value: `sim`
+          },
+          {
+            text: 'Não',
+            value: 'nao'
+          }
+        ]
+      }
+    ]
+  }
+}
+
 // ENVIA CARD PARA SABER SE QUER REPETIR AS SUGESTÕES OU SE QUER AVALIAR ATENDIMENTO
 module.exports.repetirOuAvaliar = function(sku, skusAPI) {
   const skuID = getIdSKU(sku, skusAPI);
@@ -134,11 +159,11 @@ module.exports.repetirOuAvaliar = function(sku, skusAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Mais sugestões ou avaliar o atendimento?".toUpperCase(),
+        title: "Qual sua escolha?".toUpperCase(),
         buttons: [
           {
             text: 'Mais sugestões',
-            value: `Aceito sugestões relacionadas a ${sku} código ${getIdSKU(sku, skusAPI)}`
+            value: `Mais sugestões`
           },
           {
             text: 'Avaliar atendimento',

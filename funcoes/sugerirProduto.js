@@ -5,7 +5,7 @@ const lexResponse = require('../lex/responses');
 const gerarCard = require('./cards');
 
 // LISTA ORDENADA DOS NOMES DOS SLOTS, ONDE ESTA ORDEM ESTABELECE O FLUXO DA INTERAÇÃO DO CHATBOT COM O USUÁRIO
-const nomesSlotsOrdenados = ['categoria', 'subcategoria', 'produto', 'sku', '​linkCarrinho', 'repetirOuAvaliar']
+const nomesSlotsOrdenados = ['categoria', 'subcategoria', 'produto', 'sku', 'verFrete', 'CEP', '​linkCarrinho', 'repetirOuAvaliar']
 
 // RESULTADOS DA API
 var categoriasAPI;
@@ -28,7 +28,6 @@ function validarSlots(slots) {
   }
 
   // VALIDAR SLOT SUBCATEGORIA
-  // console.log('validate: ', subcategoriasAPI, subcategoria)
   if (subcategoriasAPI !== undefined && subcategoria !== null) {
     if (subcategoria.toLowerCase().indexOf('voltar') !== -1 ) {
       return {
@@ -38,7 +37,6 @@ function validarSlots(slots) {
       }
     }
     const nomesSubcategorias = subcategoriasAPI.map(subcat => subcat.nome);
-    // console.log("nomes", nomesSubcategorias, !nomesSubcategorias.includes(subcategoria.toLowerCase()))
     if (!nomesSubcategorias.includes(subcategoria.toLowerCase())) {
       return {
         seValido: false,
@@ -92,6 +90,54 @@ function validarSlots(slots) {
   
 }
 
+// VALIDAR RESPOSTA DO SLOT VER FRETE
+function validarVerFrete(verFrete) {
+
+  const resposta = verFrete.toLowerCase();
+
+  if(resposta.indexOf('sim') !== -1 || resposta.indexOf('quero') !== -1) {
+    return {
+      seValido: true,
+      querVer: true
+    }
+  }
+  else if (resposta.indexOf('não') !== -1 || resposta.indexOf('nao') !== -1) {
+    return {
+      seValido: true,
+      querVer: false
+    }
+  }
+  else {
+    return {
+      seValido: false
+    }
+  }
+
+}
+
+// VALIDAR RESPOSTA DO SLOT VER FRETE
+function validarCEP(strCEP) {
+  
+  if (strCEP.toLowerCase().indexOf('cancelar') !== -1) {
+    return {
+      seValido: true,
+      cancelar: true
+    }
+  }
+
+  strCEP = strCEP.replace(/ /g, "");
+  strCEP = strCEP.replace(/-/g, "");
+
+  let objER = /^[0-9]{8}$/;
+
+  return {
+    seValido: (objER.test(strCEP)),
+    cancelar: false,
+    CEP: strCEP,
+  }
+
+}
+
 // VALIDAR RESPOSTA DO SLOT REPETIR OU AVALIAR E RETORNAR A AÇÃO
 function validarRepetirOuAvaliar(repetirOuAvaliar) {
 
@@ -130,7 +176,7 @@ async function dispatch(intentRequest, callback) {
   var ultimoCard;
   
   const slots = intentRequest.currentIntent.slots;
-  
+
   // SE USUARIO RESPONDEU SE DESEJA REPETIR OU AVALIAR
   if(slots.repetirOuAvaliar !== null) {
     
@@ -156,9 +202,11 @@ async function dispatch(intentRequest, callback) {
       slots.sku = null; 
       slots.repetirOuAvaliar = null;
       slots.linkCarrinho = null;
+      slots.verFrete = null;
+      slots.CEP = null;
     }
   }
-  
+
   // CASO NÃO SAIBA O NOME DO USUÁRIO, PERGUNTAR
   if (slots.nome === null) {
     lexResponse.delegate(intentRequest.sessionAttributes, slots, callback)
@@ -171,16 +219,13 @@ async function dispatch(intentRequest, callback) {
     lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'categoria', undefined, gerarCard.categorias(categoriasAPI), callback)
     return
   }
-
   // SE CATEGORIA JÁ FOI INFORMADA PELO USUÁRIO, ESTANDO VÁLIDA OU NÃO
   if (slots.categoria !== null) {
 
     const resultadoValidacao = validarSlots(slots);
-    // console.log('result validacao: ', resultadoValidacao)
 
     // SE ALGUM SLOT INFORMADO PELO USUÁRIO FOI INVALIDADO
     if (!resultadoValidacao.seValido) {
-      // console.log('invalido', resultadoValidacao.slotViolado)
 
       slots[resultadoValidacao.slotViolado] = null;
       
@@ -202,7 +247,6 @@ async function dispatch(intentRequest, callback) {
         default:
           break;
       }
-      // console.log(' invalidooo', resultadoValidacao.slotViolado, cardRepeticao)
             
       let message = {
         contentType: 'PlainText',
@@ -214,7 +258,6 @@ async function dispatch(intentRequest, callback) {
 
     // SE SLOT PRODUTO = VOLTAR , OU SLOT SKU = NÃO
     else if(resultadoValidacao.seValido && resultadoValidacao.voltar) {
-      // console.log('voltar', resultadoValidacao.slotVoltar)
 
       switch(resultadoValidacao.slotVoltar) {
         case 'categoria':
@@ -247,7 +290,6 @@ async function dispatch(intentRequest, callback) {
 
     // SE TODOS SLOTS INFORMADOS (NÃO NULOS) FORAM VALIDADOS
     else {
-
       // IDENFITICAR O ÚLTIMO SLOT VALIDO PARA SABER QUAL A PRÓXIMA AÇÃO
       for (let i = 0; i < nomesSlotsOrdenados.length - 1; i++) {
 
@@ -267,7 +309,6 @@ async function dispatch(intentRequest, callback) {
            * ultimoCard: será utilizado no CATCH caso seja necessário repetir a entrada do slot no Lex
            */
           try {
-            // console.log('ultimoSlotValidado', ultimoSlotValidado)
             switch (ultimoSlotValidado) {
               case 'categoria':
                 ultimoCard = gerarCard.categorias(categoriasAPI);
@@ -294,7 +335,8 @@ async function dispatch(intentRequest, callback) {
             // ENVIAR CARD PERGUNTANDO SOBRE PROXIMO SLOT
             // (a menos que o último slot validado tenha sido SKU. Nesse caso,
             // a própria função Lambda vai definir o valor do proximo slot: linkCarrinho)
-            if (ultimoSlotValidado !== 'sku') {
+            if (['categoria', 'subcategoria', 'produto'].includes(ultimoSlotValidado)) {
+            // if (ultimoSlotValidado !== 'sku' || ultimoSlotValidado === 'verFrete') {
               lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, proximoSlot, undefined, card, callback)
               return
             }
@@ -317,16 +359,91 @@ async function dispatch(intentRequest, callback) {
 
   }
 
-
   // NESTA ALTURA DO CÓDIGO, JÁ FORAM INFORMADOS E VALIDADOS TODOS SLOTS NECESSÁRIOS
-  // ANTES DE AVANÇAR PARA ETAPA DE ADICIONAR AO CARRINHO.
+  // ANTES DE AVANÇAR PARA ETAPA DE VER FRETE.
 
+  if (slots.verFrete === null) {
+    const responseCard = gerarCard.verFrete();
+    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'verFrete', undefined, responseCard, callback);
+    return;
+  }
+
+  else if(slots.verFrete !== null && slots.CEP === null) {
+
+    const resultadoValidacao = validarVerFrete(slots.verFrete);
+
+    // RESPOSTA INVALIDA, PERGUNTA DE NOVO
+    if(!resultadoValidacao.seValido) {
+      slots.verFrete = null;
+      const message = {
+        contentType: 'PlainText',
+        content: 'Desculpe, não entendemos sua resposta. Queremos saber se gostaria de ver informações sobre o frete deste produto para sua localidade.'
+      }
+      const responseCard = gerarCard.verFrete();
+      lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'verFrete', message, responseCard, callback);
+      return;
+    }
+    // SE RESPOSTA FOR VALIDA E IGUAL A NÃO QUER VER
+    else if (resultadoValidacao.seValido && resultadoValidacao.querVer) {
+      const linkConsulteCEP = "http://www.buscacep.correios.com.br/sistemas/buscacep/";
+      slots.verFrete = "sim";
+      const message = {
+        contentType: "CustomPayload",
+        content: `\{"message": "Por favor, digite o seu CEP. Se não quer mais ver o frete, digite 'cancelar'.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${linkConsulteCEP}",\n "name":"Consulte seu CEP aqui."\}]\}\}`
+      }
+      lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'CEP', message, undefined, callback);
+      return;
+    }
+    // SE RESPOSTA FOR VALIDA E IGUAL A SIM, QUER VER
+    else if (resultadoValidacao.seValido && !resultadoValidacao.querVer) {
+      slots.verFrete = "nao";
+      slots.CEP = "nao";
+    }
+  }
+  else if (slots.verFrete === "sim" && slots.CEP !== null && slots.CEP !== "nao") {
+    
+    const resultadoValidacao = validarCEP(slots.CEP);
+
+    // RESPOSTA INVALIDA, PERGUNTA DE NOVO
+    if(!resultadoValidacao.seValido) {
+      slots.CEP = null;
+      const message = {
+        contentType: 'PlainText',
+        content: "O CEP informado é inválido, use o botão acima para consultar seu CEP ou digite \"cancelar\" para desistir de ver o frete."
+      }
+      lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'CEP', message, undefined, callback);
+      return;
+    }
+    // SE RESPOSTA FOR VALIDA E IGUAL A CANCELAR
+    else if (resultadoValidacao.cancelar) {
+      slots.verFrete = "nao";
+      slots.CEP = "nao";
+    }
+    // SE INFORMOU CEP VALIDO
+    else if (!resultadoValidacao.cancelar) {
+      slots.verFrete = "sim";
+      slots.CEP = resultadoValidacao.CEP;
+    }
+
+  }
+
+  // JÁ PASSOU DA PARTE DO FRETE
   // SE AINDA NAO FOI ENVIADO O BOTÃO DE ADICIONAR AO CARRINHO E O USUÁRIO NÃO RESPONDEU "ok"/"no"
   if (intentRequest.currentIntent.confirmationStatus === 'None' ) {
+
+    let infoFrete = "";
+    if (slots.verFrete === "sim") {
+      const { price, transitTime } = await api.getFrete(slots.sku, skusAPI, slots.CEP);
+      const preco = (parseFloat(price)/100).toFixed(2);
+      const tempo = transitTime.slice(0, -2);
+      infoFrete = `O valor do frete para sua localidade fica em R$ ${preco} e o prazo estimado é de ${tempo} dias. `;
+    }
+
     const message = {
       contentType: "CustomPayload",
-      content: `\{"message": "Adicione ao carrinho e/ou digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho"\}]\}\}`
+      content: `\{"message": "${infoFrete}Adicione ao carrinho e/ou digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho"\}]\}\}`
     }
+
     lexResponse.confirmIntent(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, message, undefined, callback)
     return;
   }

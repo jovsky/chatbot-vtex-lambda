@@ -4,7 +4,6 @@ const { replaceChar } = require('../util/util')
 // PARAMETROS DE ACESSO À API
 const api = axios.create({
   baseURL: "https://hiringcoders14.myvtex.com/api/",
-  method: "GET",
   headers: {
     'accept': 'application/json',
     'content-type': 'application/json',
@@ -12,6 +11,7 @@ const api = axios.create({
     'x-vtex-api-apptoken': 'TLAPVRTTFHVDDIIXBTDIUWDILDKLUKAMFWDQVFNKIMRJMTIGYFRYBIEWIRDRHIZUHIXHFRC'
   }
 });
+
 
 // PEGAR O ID DA CATEGORIA SELECIONADA A PARTIR DOS DADOS DA API
 function getIdCategoria(nomeCategoria, categoriasAPI) {
@@ -28,6 +28,12 @@ function getIdSubcategoria(nomeSubcategoria, subcategoriasAPI) {
 // PEGAR O ID DO PRODUTO SELECIONADO A PARTIR DOS DADOS DA API
 function getIdProduto(nomeProduto, produtosAPI) {
   const result = produtosAPI.filter((prod) => prod.nome === nomeProduto);
+  return result[0].id;
+}
+
+// PEGAR O ID DO SKU SELECIONADO A PARTIR DOS DADOS DA API
+function getIdSKU(nomeSKU, skusAPI) {
+  const result = skusAPI.filter((sku) => sku.nome === nomeSKU);
   return result[0].id;
 }
 
@@ -134,4 +140,32 @@ module.exports.getSKUs = (produto, produtosAPI) => {
 module.exports.getLinkSKUs = (skusAPI, nomeSKU) => {
   const [sku] = skusAPI.filter( sku => sku.nome === nomeSKU)
   return sku.linkCarrinho;
+}
+
+
+module.exports.getFrete = async (skuNome, skusAPI, CEP) => {
+
+  const skuID = getIdSKU(skuNome, skusAPI);
+  console.log(' GET FRETE::', skuID, CEP);
+
+  const url = `checkout/pub/orderforms/simulation`;
+  const response = await api.post(url, 
+    {
+      items: [
+        {
+          id: skuID, 
+          quantity: 1, 
+          seller: 1
+        }
+      ],
+      postalCode: CEP,
+      country: "BRA"
+    }
+  );
+  const data = await response.data;
+
+  const { price, transitTime } = data.logisticsInfo[0].slas[0]
+
+  return { price, transitTime }
+
 }
