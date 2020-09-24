@@ -30,6 +30,7 @@ function getIdProduto(nomeProduto, produtosAPI) {
   const result = produtosAPI.filter((prod) => prod.nome === nomeProduto);
   return result[0].id;
 }
+module.exports.getIdProduto = getIdProduto;
 
 // PEGAR O ID DO SKU SELECIONADO A PARTIR DOS DADOS DA API
 function getIdSKU(nomeSKU, skusAPI) {
@@ -159,4 +160,31 @@ module.exports.getFrete = async (skuNome, skusAPI, CEP) => {
 
   return { price, transitTime }
 
+}
+
+module.exports.getRelacionados = async (produtoId) => {
+  const url = `catalog_system/pub/products/crossselling/whosawalsosaw/${produtoId}`;
+
+  const response = await api.get(url);
+
+  const data = response.data;
+
+  let listaRelacionados = [];
+
+  data.map(sku => {
+    sku.items.map(item => {
+      listaRelacionados.push({
+        nome: item.name.toLowerCase(),
+        id: item.itemId,
+        preco: item.sellers[0].commertialOffer.Price.toString(),
+        linkCarrinho: item.sellers[0].addToCartLink,
+        image: item.images[0].imageUrl
+      })
+      return;
+    })
+    return;
+  })
+
+ 
+  return listaRelacionados;
 }

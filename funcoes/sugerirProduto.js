@@ -196,14 +196,22 @@ async function dispatch(intentRequest, callback) {
     }
     // SE RESPOSTA FOR VALIDA E IGUAL A REPETIR SUGESTÕES
     else if (resultadoValidacao.seValido && resultadoValidacao.acao === "repetir") {
-      slots.categoria = null;
-      slots.subcategoria = null; 
-      slots.produto = null; 
       slots.sku = null; 
       slots.repetirOuAvaliar = null;
       slots.linkCarrinho = null;
-      slots.verFrete = null;
-      slots.CEP = null;
+      intentRequest.currentIntent.confirmationStatus = 'None';
+      const crossAPI =  await api.getRelacionados(api.getIdProduto(slots.produto, produtosAPI));
+      skusAPI = crossAPI;
+      const responseCard = gerarCard.produtosRelacionados(crossAPI);  //crossAPI[0].productName;
+      //console.log(`Resposta do cross: ${response}`);
+      const message = {
+        contentType: 'PlainText',
+        content: `Vou te sugerir alguns produtos`
+      }
+      
+      //const responseCard = gerarCard.produtosRelacionados(crossAPI);
+      lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'sku', message, responseCard, callback)
+      return;
     }
   }
 

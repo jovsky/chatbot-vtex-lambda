@@ -100,7 +100,7 @@ module.exports.produtos = function (produtosAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Produtos da categoria'.toUpperCase(),
+        title: 'Produtos'.toUpperCase(),
         buttons: botoesProdutos
       }
     ]
@@ -185,5 +185,27 @@ module.exports.repetirOuAvaliar = function(sku, skusAPI) {
         ]
       }
     ]
+  }
+}
+
+module.exports.produtosRelacionados = function(crossAPI) {
+  //console.log(`cross return: ${crossAPI}`)
+  const crossCards = crossAPI.map((sku) => {
+    console.log(`Valor do cross sku: ${sku.name}`);
+    return {
+      title: sku.nome.toUpperCase(),
+      subTitle: sku.preco,
+      imageUrl: sku.image,
+      attachmentLinkUrl: sku.linkCarrinho,
+      buttons: [{
+        text: 'Gostei',
+        value: sku.nome
+      }]
+    }
+  })
+  return {
+    version: 1,
+    contentType: "application/vnd.amazonaws.card.generic",
+    genericAttachments: crossCards
   }
 }
