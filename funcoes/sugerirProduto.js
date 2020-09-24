@@ -2,168 +2,44 @@
 
 const api = require('../api/api')
 const lexResponse = require('../lex/responses');
-const gerarCard = require('./cards');
+const gerarCard = require('./cards/gerarCard');
+const validar = require("./validarSlots");
 
 // LISTA ORDENADA DOS NOMES DOS SLOTS, ONDE ESTA ORDEM ESTABELECE O FLUXO DA INTERAÇÃO DO CHATBOT COM O USUÁRIO
-const nomesSlotsOrdenados = ['categoria', 'subcategoria', 'produto', 'sku', 'verFrete', 'CEP', '​linkCarrinho', 'repetirOuAvaliar']
+const nomesSlotsOrdenados = ['nome', 'categoria', 'subcategoria', 'produto', 'sku', 'verFrete', 'CEP', '​linkCarrinho', 'repetirOuAvaliar']
 
 // RESULTADOS DA API
-var categoriasAPI;
-var subcategoriasAPI;
-var produtosAPI;
-var skusAPI;
-
-// FUNÇÃO QUE VALIDA OS SLOTS NÃO NULOS DO AMAZON LEX
-function validarSlots(slots) {
-
-  const { categoria, subcategoria, produto, sku } = slots;
-
-  // VALIDAR SLOT CATEGORIA
-  const nomesCategorias = categoriasAPI.map(categoria => categoria.nome)
-  if (!nomesCategorias.includes(categoria.toLowerCase())) {
-    return {
-      seValido: false,
-      slotViolado: "categoria"
-    }
-  }
-
-  // VALIDAR SLOT SUBCATEGORIA
-  if (subcategoriasAPI !== undefined && subcategoria !== null) {
-    if (subcategoria.toLowerCase().indexOf('voltar') !== -1 ) {
-      return {
-        seValido: true,
-        voltar: true,
-        slotVoltar: 'categoria'
-      }
-    }
-    const nomesSubcategorias = subcategoriasAPI.map(subcat => subcat.nome);
-    if (!nomesSubcategorias.includes(subcategoria.toLowerCase())) {
-      return {
-        seValido: false,
-        slotViolado: "subcategoria"
-      }
-    }
-  }
-
-  // VALIDAR SLOT PRODUTO
-  if (produtosAPI !== undefined && produto !== null) {
-    if (produto.toLowerCase().indexOf('voltar') !== -1 ) {
-      return {
-        seValido: true,
-        voltar: true,
-        slotVoltar: 'subcategoria'
-      }
-    }
-    const nomesProdutos = produtosAPI.map(produto => produto.nome)
-    if (!nomesProdutos.includes(produto.toLowerCase())) {
-      return {
-        seValido: false,
-        slotViolado: "produto"
-      }
-    }
-  }
-
-  // VALIDAR SLOT SKU
-  if (skusAPI !== undefined && sku !== null) {
-    if (sku.toLowerCase().indexOf('não') !== -1 || sku.toLowerCase().indexOf('nao') !== -1) {
-      return {
-        seValido: true,
-        voltar: true,
-        slotVoltar: 'produto'
-      }
-    }
-    const nomesSKUs = skusAPI.map(sku => sku.nome)
-    if (!nomesSKUs.includes(sku.toLowerCase())) {
-      return {
-        seValido: false,
-        slotViolado: "sku"
-      }
-    }
-  }
-
-
-  // TODAS SLOTS NÃO NULAS SÃO VÁLIDOS
-  return {
-    seValido: true,
-    voltar: false
-  }
-  
+const dadosAPIs = {
+  categoriasAPI: undefined,
+  subcategoriasAPI: undefined,
+  produtosAPI: undefined,
+  skusAPI: undefined
 }
 
-// VALIDAR RESPOSTA DO SLOT VER FRETE
-function validarVerFrete(verFrete) {
+// FUNÇÃO QUE LIMPA SLOTS E DEVOLVE CARD QUANDO USUARIO OPTA POR VOLTAR POR MENU
+function voltarEscolha (slots, slotVoltar) {
 
-  const resposta = verFrete.toLowerCase();
-
-  if(resposta.indexOf('sim') !== -1 || resposta.indexOf('quero') !== -1) {
-    return {
-      seValido: true,
-      querVer: true
-    }
+  let cardRepeticao;
+  switch(slotVoltar) {
+    case 'categoria':
+      slots.categoria = null;
+      slots.subcategoria = null;
+      cardRepeticao = gerarCard.categorias(dadosAPIs.categoriasAPI);
+      break;
+    case 'subcategoria':
+      slots.subcategoria = null;
+      slots.produto = null;
+      cardRepeticao = gerarCard.subcategorias(dadosAPIs.subcategoriasAPI);
+      break;
+    case 'produto':
+      slots.produto = null;
+      slots.sku = null;
+      cardRepeticao = gerarCard.produtos(dadosAPIs.produtosAPI);
+      break;
+    default:
+      break;
   }
-  else if (resposta.indexOf('não') !== -1 || resposta.indexOf('nao') !== -1) {
-    return {
-      seValido: true,
-      querVer: false
-    }
-  }
-  else {
-    return {
-      seValido: false
-    }
-  }
-
-}
-
-// VALIDAR RESPOSTA DO SLOT VER FRETE
-function validarCEP(strCEP) {
-  
-  if (strCEP.toLowerCase().indexOf('cancelar') !== -1) {
-    return {
-      seValido: true,
-      cancelar: true
-    }
-  }
-
-  strCEP = strCEP.replace(/ /g, "");
-  strCEP = strCEP.replace(/-/g, "");
-
-  let objER = /^[0-9]{8}$/;
-
-  return {
-    seValido: (objER.test(strCEP)),
-    cancelar: false,
-    CEP: strCEP,
-  }
-
-}
-
-// VALIDAR RESPOSTA DO SLOT REPETIR OU AVALIAR E RETORNAR A AÇÃO
-function validarRepetirOuAvaliar(repetirOuAvaliar) {
-
-  // VALIDAR SLOT REPETIR OU MAIS SUGESTÕES
-
-  const resposta = repetirOuAvaliar.toLowerCase()
-
-  if(resposta.indexOf('mais') !== -1
-    || resposta.indexOf('sugestões') !== -1
-    || resposta.indexOf('sugestoes') !== -1) {
-    return {
-      seValido: true,
-      acao: "repetir"
-    }
-  }
-  else if (resposta.indexOf('avaliar') !== -1 || resposta.indexOf('atendimento') !== -1 ) {
-    return {
-      seValido: true,
-      acao: "avaliar"
-    }
-  }
-  else {
-    return {
-      seValido: false
-    }
-  }
+  return cardRepeticao;
 
 }
 
@@ -177,10 +53,16 @@ async function dispatch(intentRequest, callback) {
   
   const slots = intentRequest.currentIntent.slots;
 
+  // CASO NÃO SAIBA O NOME DO USUÁRIO, PERGUNTAR
+  if (slots.nome === null) {
+    lexResponse.delegate(intentRequest.sessionAttributes, slots, callback)
+    return;
+  }
+
   // SE USUARIO RESPONDEU SE DESEJA REPETIR OU AVALIAR
   if(slots.repetirOuAvaliar !== null) {
     
-    const resultadoValidacao = validarRepetirOuAvaliar(slots.repetirOuAvaliar)
+    const resultadoValidacao = validar.repetirOuAvaliar(slots.repetirOuAvaliar)
     intentRequest.currentIntent.confirmationStatus = 'Confirmed';
     
     // RESPOSTA INVALIDA, PERGUNTA DE NOVO
@@ -190,7 +72,7 @@ async function dispatch(intentRequest, callback) {
         contentType: 'PlainText',
         content: 'Desculpe, não entendemos sua resposta. Queremos saber se gostaria de receber mais sugestão ou se deseja finalizar avaliando nosso atendimento.'
       }
-      const responseCard = gerarCard.repetirOuAvaliar(slots.sku, skusAPI)
+      const responseCard = gerarCard.repetirOuAvaliar(slots.sku, dadosAPIs.skusAPI)
       lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', message, responseCard, callback)
       return
     }
@@ -200,62 +82,37 @@ async function dispatch(intentRequest, callback) {
       slots.repetirOuAvaliar = null;
       slots.linkCarrinho = null;
       intentRequest.currentIntent.confirmationStatus = 'None';
-      const crossAPI =  await api.getRelacionados(api.getIdProduto(slots.produto, produtosAPI));
-      skusAPI = crossAPI;
-      const responseCard = gerarCard.produtosRelacionados(crossAPI);  //crossAPI[0].productName;
-      //console.log(`Resposta do cross: ${response}`);
+      dadosAPIs.skusAPI =  await api.getRelacionados(api.getIdProduto(slots.produto, dadosAPIs.produtosAPI));
+      const responseCard = gerarCard.produtosRelacionados(dadosAPIs.skusAPI); 
       const message = {
         contentType: 'PlainText',
-        content: `Vou te sugerir alguns produtos`
+        content: `Encontrei aqui alguns itens relacionados ao que foi adicionado ao carrinho. Se interessa por algum? Se não, digite "voltar" para voltar no menu.`
       }
       
-      //const responseCard = gerarCard.produtosRelacionados(crossAPI);
       lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'sku', message, responseCard, callback)
       return;
     }
   }
 
-  // CASO NÃO SAIBA O NOME DO USUÁRIO, PERGUNTAR
-  if (slots.nome === null) {
-    lexResponse.delegate(intentRequest.sessionAttributes, slots, callback)
-    return;
-  }
-  
-  categoriasAPI = await api.getCategorias();
-  // SE CATEGORIA AINDA NÃO FOI INFORMADA PELO USUÁRIO
+  // RECEBE CATEGORIAS DA API
+  dadosAPIs.categoriasAPI = await api.getCategorias();
+
+  // SE CATEGORIA AINDA NÃO FOI INFORMADA PELO USUÁRIO, PERGUNTAR
   if (slots.categoria === null) {
-    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'categoria', undefined, gerarCard.categorias(categoriasAPI), callback)
+    lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'categoria', undefined, gerarCard.categorias(dadosAPIs.categoriasAPI), callback)
     return
   }
-  // SE CATEGORIA JÁ FOI INFORMADA PELO USUÁRIO, ESTANDO VÁLIDA OU NÃO
+  // SE CATEGORIA JÁ FOI INFORMADA PELO USUÁRIO, VALIDAR
   if (slots.categoria !== null) {
 
-    const resultadoValidacao = validarSlots(slots);
+    const resultadoValidacao = validar.slots(slots, dadosAPIs);
+    // console.log(" aaaaa", resultadoValidacao)
 
     // SE ALGUM SLOT INFORMADO PELO USUÁRIO FOI INVALIDADO
     if (!resultadoValidacao.seValido) {
 
       slots[resultadoValidacao.slotViolado] = null;
-      
-      var cardRepeticao;
-      
-      switch (resultadoValidacao.slotViolado) {
-        case 'categoria':
-          cardRepeticao = gerarCard.categorias(categoriasAPI);
-          break;
-        case 'subcategoria':
-          cardRepeticao = gerarCard.subcategorias(subcategoriasAPI); //   IMPLEMENTAR <----
-          break;
-        case 'produto':
-          cardRepeticao = gerarCard.produtos(produtosAPI);
-          break;
-        case 'sku':
-          cardRepeticao = gerarCard.SKUs(skusAPI);
-          break;
-        default:
-          break;
-      }
-            
+      const cardRepeticao = gerarCard.repeticao(resultadoValidacao.slotViolado, dadosAPIs);
       let message = {
         contentType: 'PlainText',
         content: 'Desculpe, não temos a opção escolhida. Temos as seguintes:'
@@ -267,25 +124,7 @@ async function dispatch(intentRequest, callback) {
     // SE SLOT PRODUTO = VOLTAR , OU SLOT SKU = NÃO
     else if(resultadoValidacao.seValido && resultadoValidacao.voltar) {
 
-      switch(resultadoValidacao.slotVoltar) {
-        case 'categoria':
-          slots.categoria = null;
-          slots.subcategoria = null;
-          cardRepeticao = gerarCard.categorias(categoriasAPI);
-          break;
-        case 'subcategoria':
-          slots.subcategoria = null;
-          slots.produto = null;
-          cardRepeticao = gerarCard.subcategorias(subcategoriasAPI);
-          break;
-        case 'produto':
-          slots.produto = null;
-          slots.sku = null;
-          cardRepeticao = gerarCard.produtos(produtosAPI);
-          break;
-        default:
-          break;
-      }
+      const cardRepeticao = voltarEscolha(slots, resultadoValidacao.slotVoltar);
 
       let message = {
         contentType: 'PlainText',
@@ -311,30 +150,25 @@ async function dispatch(intentRequest, callback) {
           proximoSlot = nomeProximoSlot;
 
           // DETERMINAR O PRÓXIMO SLOT A PERGUNTAR
-          /**
-           * receber os dados da API referente ao próximo slot a ser informado
-           * card: responseCard para o próximo slot
-           * ultimoCard: será utilizado no CATCH caso seja necessário repetir a entrada do slot no Lex
-           */
           try {
             switch (ultimoSlotValidado) {
               case 'categoria':
-                ultimoCard = gerarCard.categorias(categoriasAPI);
-                subcategoriasAPI = await api.getSubcategorias(slots.categoria, categoriasAPI); // implementar
-                card = gerarCard.subcategorias(subcategoriasAPI);
+                ultimoCard = gerarCard.categorias(dadosAPIs.categoriasAPI);
+                dadosAPIs.subcategoriasAPI = await api.getSubcategorias(slots.categoria, dadosAPIs.categoriasAPI); 
+                card = gerarCard.subcategorias(dadosAPIs.subcategoriasAPI);
                 break;
               case 'subcategoria':
-                ultimoCard = gerarCard.subcategorias(subcategoriasAPI); // <----- IMPLEMENTAR
-                produtosAPI = await api.getProdutos(slots.categoria, slots.subcategoria, categoriasAPI, subcategoriasAPI); // <----- IMPLEMENTAR
-                card = gerarCard.produtos(produtosAPI);
+                ultimoCard = gerarCard.subcategorias(dadosAPIs.subcategoriasAPI);
+                dadosAPIs.produtosAPI = await api.getProdutos(slots.categoria, slots.subcategoria, dadosAPIs.categoriasAPI, dadosAPIs.subcategoriasAPI); 
+                card = gerarCard.produtos(dadosAPIs.produtosAPI);
                 break;
               case 'produto':
-                ultimoCard = gerarCard.produtos(produtosAPI, slots.sku);
-                skusAPI = api.getSKUs(slots.produto, produtosAPI);
-                card = gerarCard.SKUs(skusAPI);
+                ultimoCard = gerarCard.produtos(dadosAPIs.produtosAPI, slots.sku);
+                dadosAPIs.skusAPI = api.getSKUs(slots.produto, dadosAPIs.produtosAPI);
+                card = gerarCard.SKUs(dadosAPIs.skusAPI);
                 break;
               case 'sku':
-                slots.linkCarrinho = api.getLinkSKUs(skusAPI, slots.sku);
+                slots.linkCarrinho = api.getLinkSKUs(dadosAPIs.skusAPI, slots.sku);
                 break;
               default:
                 break;
@@ -344,7 +178,6 @@ async function dispatch(intentRequest, callback) {
             // (a menos que o último slot validado tenha sido SKU. Nesse caso,
             // a própria função Lambda vai definir o valor do proximo slot: linkCarrinho)
             if (['categoria', 'subcategoria', 'produto'].includes(ultimoSlotValidado)) {
-            // if (ultimoSlotValidado !== 'sku' || ultimoSlotValidado === 'verFrete') {
               lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, proximoSlot, undefined, card, callback)
               return
             }
@@ -364,7 +197,6 @@ async function dispatch(intentRequest, callback) {
         }
       }
     }
-
   }
 
   // NESTA ALTURA DO CÓDIGO, JÁ FORAM INFORMADOS E VALIDADOS TODOS SLOTS NECESSÁRIOS
@@ -376,9 +208,10 @@ async function dispatch(intentRequest, callback) {
     return;
   }
 
+  // USUARIO INSERIU SE QUER VER FRETE, ENTÃO VALIDAR RESPOSTA
   else if(slots.verFrete !== null && slots.CEP === null) {
 
-    const resultadoValidacao = validarVerFrete(slots.verFrete);
+    const resultadoValidacao = validar.verFrete(slots.verFrete);
 
     // RESPOSTA INVALIDA, PERGUNTA DE NOVO
     if(!resultadoValidacao.seValido) {
@@ -393,8 +226,8 @@ async function dispatch(intentRequest, callback) {
     }
     // SE RESPOSTA FOR VALIDA E IGUAL A NÃO QUER VER
     else if (resultadoValidacao.seValido && resultadoValidacao.querVer) {
-      const linkConsulteCEP = "http://www.buscacep.correios.com.br/sistemas/buscacep/";
       slots.verFrete = "sim";
+      const linkConsulteCEP = "http://www.buscacep.correios.com.br/sistemas/buscacep/";
       const message = {
         contentType: "CustomPayload",
         content: `\{"message": "Por favor, digite o seu CEP. Se não quer mais ver o frete, digite 'cancelar'.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${linkConsulteCEP}",\n "name":"Consulte seu CEP aqui."\}]\}\}`
@@ -408,9 +241,11 @@ async function dispatch(intentRequest, callback) {
       slots.CEP = "nao";
     }
   }
+
+  // USUARIO QUIS VER CEP E JÁ INSERIU CEP, ENTÃO VALIDAR CEP
   else if (slots.verFrete === "sim" && slots.CEP !== null && slots.CEP !== "nao") {
     
-    const resultadoValidacao = validarCEP(slots.CEP);
+    const resultadoValidacao = validar.CEP(slots.CEP);
 
     // RESPOSTA INVALIDA, PERGUNTA DE NOVO
     if(!resultadoValidacao.seValido) {
@@ -435,46 +270,40 @@ async function dispatch(intentRequest, callback) {
 
   }
 
-  // JÁ PASSOU DA PARTE DO FRETE
-  // SE AINDA NAO FOI ENVIADO O BOTÃO DE ADICIONAR AO CARRINHO E O USUÁRIO NÃO RESPONDEU "ok"/"no"
+  // USUÁRIO JÁ RESPONDEU SE QUIS VER OU NÃO O FRETE, AGORA MOSTRAR RESULTADO E MOSTRAR BOTÃO DE ADICIONAR AO CARRINHO
   if (intentRequest.currentIntent.confirmationStatus === 'None' ) {
 
     let infoFrete = "";
     if (slots.verFrete === "sim") {
-      const { price, transitTime } = await api.getFrete(slots.sku, skusAPI, slots.CEP);
+      const { price, transitTime } = await api.getFrete(slots.sku, dadosAPIs.skusAPI, slots.CEP);
       const preco = (parseFloat(price)/100).toFixed(2);
       const tempo = transitTime.slice(0, -2);
       infoFrete = `O valor do frete para sua localidade fica em R$ ${preco} e o prazo de entrega estimado é de ${tempo} dias. `;
     }
-
     const message = {
       contentType: "CustomPayload",
       content: `\{"message": "${infoFrete}Adicione ao carrinho e/ou digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho",\n "openLinkInNewTab": false\}]\}\}`
     }
-
     lexResponse.confirmIntent(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, message, undefined, callback)
     return;
   }
 
-  // SE O BOTÃO JÁ FOI ENVIADO, O LEX DEVE PERGUNTAR SE DESEJA:
+  // SE O BOTÃO JÁ FOI DO CARRINHO JÁ FOI ENVIADO, O LEX DEVE PERGUNTAR SE DESEJA:
   // RECEBER MAIS SUGESTÕES, OU AVALIAR O ATENDIMENTO
   else if (intentRequest.currentIntent.confirmationStatus !== 'None' && slots.repetirOuAvaliar === null){
-    const responseCard = gerarCard.repetirOuAvaliar(slots.sku, skusAPI)
+    const responseCard = gerarCard.repetirOuAvaliar(slots.sku, dadosAPIs.skusAPI)
     lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, 'repetirOuAvaliar', undefined, responseCard, callback)
     return  
   }
 
   // CASO NÃO TENHA FEITO NENHUM CALLBACK ATÉ AQUI, DEIXAR PARA O LEX DECIDIR A PRÓXIMA AÇÃO
-  // slots.repetirOuAvaliar = null;
   lexResponse.elicitIntent(intentRequest.sessionAttributes, undefined, undefined, callback)
   return
 }
 
 module.exports = async (event, context, callback) => {
   try {
-
     await dispatch(event, (response) => callback(null, response));
-
   } catch (err) {
     callback(err);
   }

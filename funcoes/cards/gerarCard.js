@@ -1,5 +1,3 @@
-const { replaceChar } = require('../util/util')
-
 // MONTAR CARD PARA PREENCHER SLOT CATEGORIA COM DADOS DA API 
 module.exports.categorias = function(categoriasAPI) {
 
@@ -13,7 +11,6 @@ module.exports.categorias = function(categoriasAPI) {
 
   const botoesCategorias = categoriasAPI.map( (categoria) => {
     return {
-      // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
       text: `${categoria.nome.toUpperCase()} ${emojis[categoria.nome]}`,
       value: categoria.nome
     }
@@ -38,8 +35,7 @@ module.exports.subcategorias = function(subcategoriasAPI) {
 
   const botoesCategorias = subcategoriasAPI.map( (subcategoria) => {
     return {
-      // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
-      text: subcategoria.nome.toUpperCase(),
+      text: 'gênero'.toUpperCase(),
       value: subcategoria.nome
     }
   })
@@ -66,7 +62,6 @@ module.exports.subcategorias = function(subcategoriasAPI) {
 
   const botoesSubcategorias = subcategoriasAPI.map( (subcategoria) => {
     return {
-      // text: replaceChar(categoria.nome.toUpperCase(), "_", " "),
       text: `${subcategoria.nome.toUpperCase()} ${emojis[subcategoria.nome]}`,
       value: subcategoria.nome
     }
@@ -89,7 +84,6 @@ module.exports.produtos = function (produtosAPI) {
 
   const botoesProdutos = produtosAPI.map((produto) => {
     return {
-      // text: replaceChar(produto.nome.toUpperCase(), "_", " "),
       text: produto.nome.toUpperCase(),
       value: produto.nome
     }
@@ -112,7 +106,6 @@ module.exports.SKUs = function(skusAPI) {
 
   const slideCards = skusAPI.map((sku) => {
     return {
-      // title: replaceChar(sku.nome.toUpperCase(), "_", " "),
       title: sku.nome.toUpperCase(),
       subTitle: `R$ ${sku.preco}`,
       imageUrl: sku.imagem,
@@ -189,13 +182,12 @@ module.exports.repetirOuAvaliar = function(sku, skusAPI) {
 }
 
 module.exports.produtosRelacionados = function(crossAPI) {
-  //console.log(`cross return: ${crossAPI}`)
   const crossCards = crossAPI.map((sku) => {
     console.log(`Valor do cross sku: ${sku.name}`);
     return {
       title: sku.nome.toUpperCase(),
-      subTitle: sku.preco,
-      imageUrl: sku.image,
+      subTitle: `R$ ${sku.preco}`,
+      imageUrl: sku.imagem,
       attachmentLinkUrl: sku.linkCarrinho,
       buttons: [{
         text: 'Gostei',
@@ -208,4 +200,29 @@ module.exports.produtosRelacionados = function(crossAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: crossCards
   }
+}
+
+module.exports.repeticao = (slotViolado, dadosAPIs) => {
+
+  let cardRepeticao;
+
+  switch (slotViolado) {
+    case 'categoria':
+      cardRepeticao = this.categorias(dadosAPIs.categoriasAPI);
+      break;
+    case 'subcategoria':
+      cardRepeticao = this.subcategorias(dadosAPIs.subcategoriasAPI); 
+      break;
+    case 'produto':
+      cardRepeticao = this.produtos(dadosAPIs.produtosAPI);
+      break;
+    case 'sku':
+      cardRepeticao = this.SKUs(dadosAPIs.skusAPI);
+      break;
+    default:
+      break;
+    }
+
+    return cardRepeticao;
+
 }

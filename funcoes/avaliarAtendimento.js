@@ -18,10 +18,6 @@ async function dispatch(intentRequest, callback) {
 
     const object_kommunicate = `\{"message": "Obrigado pela avaliação! Poderia nos dar só mais 1 minuto da sua atenção para uma causa importante? Conheça o TETO. O TETO é uma organização da sociedade civil, sem fins lucrativos, que funciona graças à contribuição econômica das empresas, à cooperação internacional e a doações de pessoas como você, que acreditam em nosso trabalho. Essas contribuições nos permitem continuar trabalhando para superar a pobreza em comunidades precárias na América Latina. Deseja realizar uma doação para a TETO?",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":3,\n "payload":[\{"type":"link",\n "url":"${LINK_5}",\n "name":"Doe R$ 5,00."\},\{"type":"link",\n "url":"${LINK_10}",\n "name":"Doe R$ 10,00."\},\{"type":"link",\n "url":"${LINK_20}",\n "name":"Doe R$ 20,00."\},\{"type":"link",\n "url":"${LINK_MAIS}",\n "name":"Conheça a TETO"\}]\}\}`
 
-    // ,\{"type":"quickReply",\n "title":"Não quero doar",\n "message":"Não quero doar"\}
-
-    // ,\{"type":"link",\n "url":"${LINK_10}",\n "name":"Doe R$ 10,00."\},\{"type":"link",\n "url":"${LINK_20}",\n "name":"Doe R$ 20,00."\},\{"type":"link",\n "url":"${LINK_MAIS}",\n "name":"Conheça a TETO"\}
-
     const message = {
       contentType: 'CustomPayload',
       content: object_kommunicate

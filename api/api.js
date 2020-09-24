@@ -1,5 +1,4 @@
 const axios = require('axios');
-const { replaceChar } = require('../util/util')
 
 // PARAMETROS DE ACESSO À API
 const api = axios.create({
@@ -44,11 +43,6 @@ function getSKUsDoProduto(idProduto, produtosAPI) {
   return result[0].skus;
 }
 
-// function getSubcategoriasDaCategoria(idCategoria, categoriasAPI) {
-//   const result = categoriasAPI.filter((cat) => cat.id === idCategoria);
-//   return result[0].skus;
-// }
-
 // RECEBE DA API OS DADOS DE CATEGORIAS EXISTENTES
 module.exports.getCategorias = async () => {
   const url = 'catalog_system/pub/category/tree/1'
@@ -58,7 +52,6 @@ module.exports.getCategorias = async () => {
 
   const result = data.map(result => {
     return {
-      // nome: replaceChar(result.name.toLowerCase(), " ", "_"),
       nome: result.name.toLowerCase(),
       id: result.id,
       subcategorias: result.children.map( (child) => {
@@ -98,7 +91,6 @@ module.exports.getProdutos = async (categoria, subcategoria, categoriasAPI, subc
 
   const result = data.map(produto => {
     return {
-      // nome: replaceChar(produto.productName.toLowerCase()," ", "_"),
       nome: produto.productName.toLowerCase(),
       id: produto.productId,
       skus: produto.items
@@ -117,7 +109,6 @@ module.exports.getSKUs = (produto, produtosAPI) => {
 
   return skusProduto.map(sku => {
     return {
-      // nome: replaceChar(sku.name.toLowerCase(), " ", "_"),
       nome: sku.name.toLowerCase(),
       id: sku.itemId,
       preco: (parseFloat(sku.sellers[0].commertialOffer.Price).toFixed(2)).toString(),
@@ -176,15 +167,14 @@ module.exports.getRelacionados = async (produtoId) => {
       listaRelacionados.push({
         nome: item.name.toLowerCase(),
         id: item.itemId,
-        preco: item.sellers[0].commertialOffer.Price.toString(),
+        preco: (parseFloat(item.sellers[0].commertialOffer.Price).toFixed(2)).toString(),
         linkCarrinho: item.sellers[0].addToCartLink,
-        image: item.images[0].imageUrl
+        imagem: item.images[0].imageUrl
       })
       return;
     })
     return;
   })
-
  
   return listaRelacionados;
 }
