@@ -113,9 +113,14 @@ async function dispatch(intentRequest, callback) {
 
       slots[resultadoValidacao.slotViolado] = null;
       const cardRepeticao = gerarCard.repeticao(resultadoValidacao.slotViolado, dadosAPIs);
+      let addMessage = ""
+      if (resultadoValidacao.slotViolado === 'subcategoria' || resultadoValidacao.slotViolado === 'produto') 
+        addMessage = `Você pode digitar "voltar" para voltar ao menu anterior.`
+      else if (resultadoValidacao.slotViolado === 'sku') 
+        addMessage = `Você pode digitar "não" para voltar ao menu anterior.`
       let message = {
         contentType: 'PlainText',
-        content: 'Desculpe, não temos a opção escolhida. Temos as seguintes:'
+        content: `Desculpe, não temos a opção escolhida. Temos as mostradas abaixo. ${addMessage}`
       }
       lexResponse.elicitSlot(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, resultadoValidacao.slotViolado, message, cardRepeticao, callback)
       return
@@ -282,7 +287,7 @@ async function dispatch(intentRequest, callback) {
     }
     const message = {
       contentType: "CustomPayload",
-      content: `\{"message": "${infoFrete}Adicione ao carrinho e/ou digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho",\n "openLinkInNewTab": false\}]\}\}`
+      content: `\{"message": "${infoFrete}Se quer adicionar o item ${slots.sku} ao carrinho clique no botão abaixo. Digite 'ok' para continuar.",\n "platform":"kommunicate",\n "metadata": \{"contentType":"300",\n "templateId":"3",\n "payload":[\{"type":"link",\n "url":"${slots.linkCarrinho}",\n "name":"Adicionar ao carrinho",\n "openLinkInNewTab": false\}]\}\}`
     }
     lexResponse.confirmIntent(intentRequest.sessionAttributes, intentRequest.currentIntent.name, slots, message, undefined, callback)
     return;

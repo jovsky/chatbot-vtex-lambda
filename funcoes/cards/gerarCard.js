@@ -33,28 +33,6 @@ module.exports.categorias = function(categoriasAPI) {
 // MONTAR CARD PARA PREENCHER SLOT SUBCATEGORIAS COM DADOS DA API 
 module.exports.subcategorias = function(subcategoriasAPI) {
 
-  const botoesCategorias = subcategoriasAPI.map( (subcategoria) => {
-    return {
-      text: 'gênero'.toUpperCase(),
-      value: subcategoria.nome
-    }
-  })
-
-  return {
-    version: 1,
-    contentType: "application/vnd.amazonaws.card.generic",
-    genericAttachments: [
-      {
-        title: 'Categorias'.toUpperCase(),
-        buttons: botoesCategorias
-      }
-    ]
-  }
-}
-
-// MONTAR CARD PARA PREENCHER SLOT SUBCATEGORIAS COM DADOS DA API 
-module.exports.subcategorias = function(subcategoriasAPI) {
-
   const emojis ={
     feminino: '🚺',
     masculino: '🚹'
@@ -72,7 +50,7 @@ module.exports.subcategorias = function(subcategoriasAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: 'Subcategorias'.toUpperCase(),
+        title: 'Estilo'.toUpperCase(),
         buttons: botoesSubcategorias
       }
     ]
@@ -140,7 +118,7 @@ module.exports.verFrete = function() {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Quer saber sobre o frete?".toUpperCase(),
+        title: "frete".toUpperCase(),
         buttons: [
           {
             text: 'Sim, quero ver o frete',
@@ -165,7 +143,7 @@ module.exports.repetirOuAvaliar = function(sku, skusAPI) {
     contentType: "application/vnd.amazonaws.card.generic",
     genericAttachments: [
       {
-        title: "Qual sua escolha?".toUpperCase(),
+        title: "E agora?".toUpperCase(),
         buttons: [
           {
             text: 'Mais sugestões',
